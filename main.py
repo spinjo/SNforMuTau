@@ -111,31 +111,15 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
         print("Coupling with opacity = 2/3: gL = {0:.1e} ({1})".format(gL, approx))
     return gL
 
-#checkModel_FS(3., 1/3, 1e-5, 1.)
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="inv")
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="CM")
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="exact")
-#getCoupling_FS(5, 1/3, 1, rangeSim=[55,70], outCheck=True)
+# Examples
+'''
+checkModel_FS(3., 1/3, 1e-5, 1.)
+checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="inv")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="CM")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="exact")
 
-#getCoupling_TR(3., 1/3, 1, scat=1, approx="CM", nPointsSim=2, outCheck=True)
-
-#mZp, mChi = [3.,1.]
-#scat = 2
-res = np.zeros((4, 3, 3))
-mZpA = np.array([3e0, 1e2, 1e6])
-scatA = np.array([1,2,4], dtype="int")
-mChi = 1.
-nP = 2
-for i in range(len(mZpA)):
-    for j in range(len(scatA)):
-        mZp = mZpA[i]
-        scat = scatA[j]
-        res[i,j,0] = getCoupling_TR(mZp, mChi/mZp, 1, scat=scat, approx="inv", nPointsSim=nP, out=True)
-        res[i,j,1] = getCoupling_TR(mZp, mChi/mZp, 1, scat=scat, approx="CM", nPointsSim=nP, out=True)
-        res[i,j,2] = getCoupling_TR(mZp, mChi/mZp, 1, scat=scat, approx="exact", nPointsSim=nP, out=True)
-        print("mZp={0:.0e} scat={1}: inv={2:.2e}\t CM={3:.2e}\t exact={4:.2e}".format(mZp, scat, res[i,j,0], res[i,j,1], res[i,j,2]))
-print(res)
-
-#TBD: compare with old CM and exact implementation
-#Observation: Difference in results for scat=2 is typically factor 10 (also for small mChi and mZp in GeV range) -> Not compatible with my former results
-#Observation: exact agrees with inv, but not with CM (both scat=1, 2)
+getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
+getCoupling_TR(3., 1/3, 1, scat=1, approx="inv", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=1, approx="CM", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=1, approx="exact", nPointsSim=2)
+'''
