@@ -3,9 +3,35 @@ import scipy.optimize as opt
 import time
 import helper
 import calc
-
 import warnings
 warnings.filterwarnings("ignore")
+
+'''
+Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
+- checkModel_FS: Compute free-streaming luminosity for a given model specified
+  by (mZp, mChi/mZp, gL, gChi/gL) and using SN simulation points in the range
+  rangeSim, where 62 is the point with the largest contribution to the integral.
+  The parameter nSim controls, which of the SN simulations is used, where nSim=1
+  is the coldest and nSim=2 is the hottest.
+- checkModel_TR: Compute opacity for a given model specified by the same
+  parameters as in checkModel_FS and using SN simulation points in the range
+  [iSphere, iSphere+nPointsSim], where the index of the chi sphere iSphere that
+  is needed to satisfy the Raffelt bound can be calculated independent of the
+  specific processes. Note that it is more efficient to rule out models already
+  at the level of the opacity (and not at the level of the trapping luminosity),
+  because the step from the opacity to the trapping luminosity depends only on
+  the kinematics of the supernova (R, T) and not on the processes in question.
+  Further, the parameter approx specifies the approximation used in the calculation
+  with possible values approx=exact (takes lots of time), approx=inv (fast and
+  decent approximation), approx=CM (fast and acceptable approximation). Finally,
+  the parameter scat specifies which processes were included, with possible values
+  scat=1 (only chi chi -> mu mu), scat=2 (add chi mu -> chi mu) and
+  scat=4 (add chi chi -> chi chi).
+- getCoupling_FS: Uses checkModel_FS to find the value of muon coupling gL where
+  the free-streaming luminosity satisfies the Raffelt bound. Have to specify
+  a range [guessLower, guessUpper] of values for gL to check.
+- getCoupling_TR: Similar to getCoupling_FS, but calling checkModel_TR.
+'''
 
 #SN point with largest contribution: 62
 def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, out=True):
@@ -108,8 +134,9 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
         print("Coupling with opacity = 2/3: gL = {0:.1e} ({1})".format(gL, approx))
     return gL
 
-# Examples
 '''
+# Examples
+
 checkModel_FS(3., 1/3, 1e-5, 1.)
 checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="inv")
 checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="CM")

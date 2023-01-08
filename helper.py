@@ -2,6 +2,15 @@ import numpy as np
 import scipy.integrate as itg
 import time
 
+'''
+Helper file including
+- Fundamental constants
+- Methods to load the Supernova simulation files
+- Formulae for the decay widths (used in cross_sections.py)
+- Furmulae for the trapping luminosity for Stefan-Boltzmann trapping
+  (used to determine the radius of the chi sphere)
+'''
+
 # fundamental constants
 e=1.6e-19
 c=3e8
@@ -84,7 +93,7 @@ def getTrappingLumiOne(xChi, R, T):
     fac=7*np.pi**4/120
     if(xChi>1e-2):
         fac, _=itg.quad(lambda x: x**2*(x**2-xChi**2)**.5 /(np.exp(x)+1), xChi, np.inf)
-    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM-Freiheitsgrade
+    Qtheo=2/np.pi * R**2* T**4 * fac
     return Qtheo
 
 def getRadiusSphere(mChi, R, T, out=False):

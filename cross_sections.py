@@ -2,6 +2,19 @@ import numpy as np
 import time
 import helper
 
+'''
+Formulae for the cross-sections.
+- Internally use dimensionless quantities x = E/T, eps = (m/T)^2, y = s/T^2
+- The top-level functions for the cross sections are called sigmaPropagator_X
+  and return objects with the correct dimensionality (fill up with powers of T)
+- The 5 relevant processes are
+  mu mu -> chi chi (s channel, relevant for free-streaming) = 0DM
+  chi chi -> mu mu (s channel, relevant for trapping) = 2DM
+  mu chi -> mu chi (t channel, relevant for trapping) = 1DM
+  chi chi -> chi chi (s channel, relevant for trapping) = DMself_s
+  chi chi -> chi chi (t channel, relevant for trapping) = DMself_t
+'''
+
 ### free-streaming
 def y_0DM(epsL, x1, x2, cosTh):
     ret=2*(epsL + x1*x2 - (x1**2-epsL)**.5 * (x2**2-epsL)**.5 * cosTh)

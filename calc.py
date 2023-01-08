@@ -6,6 +6,22 @@ import vegas
 import time
 import cross_sections as cs
 
+'''
+Main calculations for the project. The methods dQdR and lambdaInvMean are called by main.py.
+- Calculations are performed for each Supernova radius individually
+- Integrals: Use scipy.quad for single integrations and vegas for multiple integrations. We
+  made the experience that evaluating the multi-dimensional integrals is quite tricky, with
+  different methods implemented in scipy.quad and the Mathematica Integrate function giving
+  very different results. We find very stable results with the vegas implementation.
+- Calculation for the free-streaming case is straight-forward (just the triple-integral)
+- Calculation for the trapping case is challenging: The exact calculation is time consuming,
+  so we propose two approximations (inv and CM), which are typically off by small O(1)
+  factors with inv giving better results than CM. Further, it is not clear how to include
+  scattering and chi self-interactions in the trapping regime, so we implemented 3 versions
+  scat=1 (only chi chi -> mu mu), scat=2 (add chi mu -> chi mu) and
+  scat=4 (add chi chi -> chi chi) to obtain a range in which the "true" result has to lie.
+'''
+
 ### free-streaming
 def dQdR(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
     def intf1(x1, x2, y1, mL, mChi, mu, T, iSigma, statistics=0, **kwargs):
@@ -94,7 +110,7 @@ def lambdaInvMean_CM(mL, mChi, mu, T, iSigma, scat=2, **kwargs):
 def integ_MuAnn(mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
     xL=mL/T
-    def lambdaInv(x1, x2, y1, mL, mChi, mu, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi
+    def lambdaInv(x1, x2, y1, mL, mChi, mu, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi (integrated last)
         sigmaVal=cs.sigmaPropagator_2DM(mL, mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=(1-4*xChi**2/y1)**.5 * y1
@@ -149,7 +165,7 @@ def integ_MuScat(mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
 
 def integ_DMAnn(mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
-    def lambdaInv(x1, x2, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi
+    def lambdaInv(x1, x2, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi (integrated last)
         sigmaVal=cs.sigmaPropagator_DMself_s(mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=(1-4*xChi**2/y1)**.5 * y1
@@ -176,7 +192,7 @@ def integ_DMAnn(mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
 
 def integ_DMScat(mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
-    def lambdaInv(x1, x2, y1, mChi, T, iSigma, **kwargs): #x1: boring chi (either chi or chibar), x2: interesting chi
+    def lambdaInv(x1, x2, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi (integrated last)
         sigmaVal=cs.sigmaPropagator_DMself_t(mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=( (y1-2*xChi**2)**2-4*xChi**4)**.5
@@ -221,7 +237,7 @@ import matplotlib.pyplot as plt
 def integ_MuAnn_exact(x2, mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
     xL=mL/T
-    def Gamma(x1, y1, mL, mChi, mu, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi
+    def Gamma(x1, y1, mL, mChi, mu, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi (integrated last)
         sigmaVal=cs.sigmaPropagator_2DM(mL, mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=(1-4*xChi**2/y1)**.5 * y1
@@ -266,7 +282,7 @@ def integ_MuScat_exact(x2, mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **
     return res
 def integ_DMAnn_exact(x2, mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
-    def Gamma(x1, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi
+    def Gamma(x1, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi  (integrated last)
         sigmaVal=cs.sigmaPropagator_DMself_s(mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=(1-4*xChi**2/y1)**.5 * y1
@@ -288,7 +304,7 @@ def integ_DMAnn_exact(x2, mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     return res
 def integ_DMScat_exact(x2, mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
-    def Gamma(x1, y1, mChi, T, iSigma, **kwargs): #x1: boring chi (either chi or chibar), x2: interesting chi
+    def Gamma(x1, y1, mChi, T, iSigma, **kwargs): #x1: boring chi, x2: interesting chi  (integrated last)
         sigmaVal=cs.sigmaPropagator_DMself_t(mChi, T, y1, iSigma, **kwargs)
         facGamma=T**3/(4*np.pi**2*x2)*(x1**2-xChi**2)**.5/(np.exp(x1)+1) #set muChi=0
         facGamma2=( (y1-2*xChi**2)**2-4*xChi**4)**.5
