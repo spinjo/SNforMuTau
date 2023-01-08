@@ -3,10 +3,7 @@ import scipy.special as sp
 import scipy.integrate as itg
 import scipy.interpolate as itp
 import vegas
-
-import os, sys, time
-scriptPath=os.path.realpath(os.path.dirname(sys.argv[0]))
-os.chdir(scriptPath)
+import time
 import cross_sections as cs
 
 ### free-streaming

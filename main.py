@@ -1,9 +1,6 @@
 import numpy as np
 import scipy.optimize as opt
-
-import os, sys, time
-scriptPath=os.path.realpath(os.path.dirname(sys.argv[0]))
-os.chdir(scriptPath)
+import time
 import helper
 import calc
 

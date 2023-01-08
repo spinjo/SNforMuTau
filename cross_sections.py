@@ -1,8 +1,5 @@
 import numpy as np
-
-import os, sys, time
-scriptPath=os.path.realpath(os.path.dirname(sys.argv[0]))
-os.chdir(scriptPath)
+import time
 import helper
 
 ### free-streaming
