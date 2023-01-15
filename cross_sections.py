@@ -1,19 +1,9 @@
 import numpy as np
-import time
-import helper
 
-'''
-Formulae for the cross-sections.
-- Internally use dimensionless quantities x = E/T, eps = (m/T)^2, y = s/T^2
-- The top-level functions for the cross sections are called sigmaPropagator_X
-  and return objects with the correct dimensionality (fill up with powers of T)
-- The 5 relevant processes are
-  mu mu -> chi chi (s channel, relevant for free-streaming) = 0DM
-  chi chi -> mu mu (s channel, relevant for trapping) = 2DM
-  mu chi -> mu chi (t channel, relevant for trapping) = 1DM
-  chi chi -> chi chi (s channel, relevant for trapping) = DMself_s
-  chi chi -> chi chi (t channel, relevant for trapping) = DMself_t
-'''
+import os, sys, time
+scriptPath=os.path.realpath(os.path.dirname(sys.argv[0]))
+os.chdir(scriptPath)
+import helper
 
 ### free-streaming
 def y_0DM(epsL, x1, x2, cosTh):
@@ -32,7 +22,7 @@ nSig=len(sigmaArrFS)
 def sigmaPropagator_0DM(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1, **kwargs):
     if((y1 - 4*(mL/T)**2) < 0 or (y1-4*(mChi/T)**2)<0):
         return 0.
-    gamZp=helper.GamZp(mZp, mL, mChi, gL, gChi, **kwargs)
+    gamZp=helper.GamZp(mZp, mChi, gL, gChi, **kwargs)
     propFac=gL**2*gChi**2/( (y1*T**2 -mZp**2)**2 +mZp**2 * gamZp**2)
     sigmaVal = sigmaArrFS[iSigma]( (mL/T)**2, (mChi/T)**2, y1) *T**2 #factor T^2 to get correct dimensions
     ret=propFac * sigmaVal
@@ -60,7 +50,7 @@ def sigmaTR_A_LV(epsL, epsDM, epsZ, y1):
     return sigmaTR_A_V(epsL, epsDM, epsZ, y1, 1/2, -1/2, 1, 0)
 sigmaArrTR=np.array([sigmaTR_A_VV, sigmaTR_A_LV])
 
-def sigmaPropagator_1DM(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1, withNu=False): #withNu irrelevant here, only matters for s channel
+def sigmaPropagator_1DM(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1): 
     if(y1*T**2 < (mL + mChi)**2):
         return 0.
     sigmaVal=sigmaArrTR[iSigma]( (mL/T)**2, (mChi/T)**2, (mZp/T)**2, y1) *gL**2*gChi**2 /T**2

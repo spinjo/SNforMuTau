@@ -2,22 +2,13 @@ import numpy as np
 import scipy.integrate as itg
 import time
 
-'''
-Helper file including
-- Fundamental constants
-- Methods to load the Supernova simulation files
-- Formulae for the decay widths (used in cross_sections.py)
-- Furmulae for the trapping luminosity for Stefan-Boltzmann trapping
-  (used to determine the radius of the chi sphere)
-'''
-
 # fundamental constants
 e=1.6e-19
 c=3e8
 
 # masses (all in MeV)
 me=.51099895000
-mmu=105.6583755
+mmu= 105.6583755
 mtau=1776.86
 mp=938.272088
 mn=939.565420
@@ -62,22 +53,13 @@ def unpack(n):
 def gamZp_i(mZp, mi, gi):
     gamContr=mZp/(12*np.pi) * gi**2 *(1+2*mi**2/mZp**2) *(1-4*mi**2/mZp**2)**.5
     return gamContr
-def GamZp(mZp, mL, mChi, gL, gChi, withNu=False):    
+def GamZp(mZp, mChi, gL, gChi):    
     gamZp=0.
-    if(mZp > 2*mL):
-        gamZp+= gamZp_i(mZp, mL, gL)
+    if(mZp > 2*mmu):
+        gamZp+= gamZp_i(mZp, mmu, gL)
     if(mZp > 2*mChi):
         gamZp+= gamZp_i(mZp, mChi, gChi)
-    if(withNu==True):
-        gamZp+=2*gamZp_i(mZp, 0., gL)
-    return gamZp
-
-def GamZpInv(mZp, mL, mChi, gL, gChi, withNu=False):
-    gamZp=0.
-    if(mZp > 2*mChi):
-        gamZp+= gamZp_i(mZp, mChi, gChi)
-    if(withNu==True):
-        gamZp+=2*gamZp_i(mZp, 0., gL)
+    gamZp+=2*gamZp_i(mZp, 0., gL)
     return gamZp
 
 ### trapping luminosity
@@ -93,7 +75,7 @@ def getTrappingLumiOne(xChi, R, T):
     fac=7*np.pi**4/120
     if(xChi>1e-2):
         fac, _=itg.quad(lambda x: x**2*(x**2-xChi**2)**.5 /(np.exp(x)+1), xChi, np.inf)
-    Qtheo=2/np.pi * R**2* T**4 * fac
+    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM-Freiheitsgrade
     return Qtheo
 
 def getRadiusSphere(mChi, R, T, out=False):

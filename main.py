@@ -45,8 +45,8 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ou
     t00 = time.time()
     for i in range(N):
         t0 = time.time()
-        dQdR_mu = calc.dQdR(helper.mmu, mChi, mu_mu[n1+i], T[n1+i], R[n1+i], 0, mZp=mZp, gChi=gChi, gL=gL, withNu=True)
-        dQdR_nu = calc.dQdR(0., mChi, mu_numu[n1+i], T[n1+i], R[n1+i], 1, mZp=mZp, gChi=gL*gChiOvergL, gL=gL, withNu=True)
+        dQdR_mu = calc.dQdR(helper.mmu, mChi, mu_mu[n1+i], T[n1+i], R[n1+i], 0, mZp=mZp, gChi=gChi, gL=gL)
+        dQdR_nu = calc.dQdR(0., mChi, mu_numu[n1+i], T[n1+i], R[n1+i], 1, mZp=mZp, gChi=gL*gChiOvergL, gL=gL)
         dQdR[i] = dQdR_mu + 2*dQdR_nu #factor 2 because need both nu_mu and nu_tau
         t1 = time.time()
         if i==0 and out:
@@ -80,8 +80,8 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
     t00 = time.time()
     for i in range(nPointsSim):
         t0 = time.time()
-        lambdaInv_mu = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], T[iSphere+i], 0, scat=scat, mZp=mZp, gChi=gChi, gL=gL, withNu=True, approx=approx)
-        lambdaInv_nu = calc.lambdaInvMean(0., mChi, mu_numu[iSphere+i], T[iSphere+i], 1, scat=scat, mZp=mZp, gChi=gChi, gL=gL, withNu=True, approx=approx)
+        lambdaInv_mu = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], T[iSphere+i], 0, scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
+        lambdaInv_nu = calc.lambdaInvMean(0., mChi, mu_numu[iSphere+i], T[iSphere+i], 1, scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
         lambdaInv[i] = lambdaInv_mu + 2*lambdaInv_nu
         t1 = time.time()
         if i==0 and out:
