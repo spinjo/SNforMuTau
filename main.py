@@ -67,17 +67,16 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ou
         print("Using more points INCREASES the free-streaming luminosity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return Q
 
-def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=2, approx="inv", out=True):
+def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=2, approx="inv", iSphere=None, out=True):
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
     R, T, _, mu_mu, _, _, _, mu_numu = helper.unpack(nSim)
-    for i in range(nPointsSim):
+    if iSphere is None:
         iSphere = helper.getRadiusSphere(mChi, R, T, out=False)
-    if(iSphere is None):
-        if out:
-            print("No trapping bound, because blackbody emission always too low.")
-        return None
+        if(iSphere is None):
+            print(f"No radius with sufficiently large Boltzmann luminosity for mChi={mChi:.2e} MeV")
+            return None
     lambdaInv = np.zeros(nPointsSim)
     t00 = time.time()
     for i in range(nPointsSim):
@@ -121,8 +120,16 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
     return gL
 
 def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-10, guessUpper=1e0, scat=2, approx="inv", outCheck=False, out=True):   
+    # calculate iSphere
+    R, T, _, _, _, _, _, _ = helper.unpack(nSim)
+    mChi = mChiOvermZp*mZp
+    for i in range(nPointsSim):
+        iSphere = helper.getRadiusSphere(mChi, R, T, out=False) 
+    if(iSphere is None):
+        print(f"No radius with sufficiently large Boltzmann luminosity for mChi={mChi:.2e} MeV")
+        return None
     def checkTR(gL):
-        opacity = checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim, nSim, scat=scat, approx=approx, out=False)
+        opacity = checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim, nSim, scat=scat, approx=approx, iSphere=iSphere, out=False)
         if(outCheck):
             print("gL = {0:.2e} \t checkTR (gL) = {1:.2e}".format(gL, (opacity - 2/3)/(opacity + 2/3)))
         return (opacity - helper.twoThirds)/(opacity + helper.twoThirds)
@@ -139,12 +146,12 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
 '''
 # Examples
 
-#checkModel_FS(3., 1/3, 1e-5, 1.)
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="CM")
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="inv")
-#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="exact")
+checkModel_FS(3., 1/3, 1e-5, 1.)
+checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="CM")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="inv")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="exact")
 
-#getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
+getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
 getCoupling_TR(3., 1/3, 1, scat=4, approx="CM", nPointsSim=2)
 getCoupling_TR(3., 1/3, 1, scat=4, approx="inv", nPointsSim=2)
 getCoupling_TR(3., 1/3, 1, scat=4, approx="exact", nPointsSim=2)
