@@ -75,6 +75,8 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
     for i in range(nPointsSim):
         iSphere = helper.getRadiusSphere(mChi, R, T, out=False)
     if(iSphere is None):
+        if out:
+            print("No trapping bound, because blackbody emission always too low.")
         return None
     lambdaInv = np.zeros(nPointsSim)
     t00 = time.time()
@@ -93,10 +95,10 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
 
     if(out):
         if(opacity < 2/3):
-            print(f"### Model excluded by Boltzmann trapping ({approx} approximation) ###\nOpacity at the critical radius where the corresponding Boltzmann luminosity satisfies the Raffelt bound is {0:.2e}.".format(opacity))
+            print(f"### Model excluded by Boltzmann trapping ({approx} approximation) ###\nOpacity at the critical radius where the corresponding Boltzmann luminosity satisfies the Raffelt bound is {opacity:.2e}.")
             print("This is SMALLER than the value 2/3 that defines the critical radius, resulting in a SMALLER radius of the DM sphere and therefore a Boltzmann luminosity LARGER than the Raffelt bound")
         else:
-            print(f"### Model not excluded by Boltzmann trapping ({approx} approximation) ###\nOpacity at the critical radius where the corresponding Boltzmann luminosity satisfies the Raffelt bound is {0:.2e}.".format(opacity))
+            print(f"### Model not excluded by Boltzmann trapping ({approx} approximation) ###\nOpacity at the critical radius where the corresponding Boltzmann luminosity satisfies the Raffelt bound is {opacity:.2e}.")
             print("This is LARGER than the value 2/3 that defines the critical radius, resulting in a LARGER radius of the DM sphere and therefore a Boltzmann luminosity SMALLER than the Raffelt bound")
         print("NOTE: The contributions to the opacity where calculated using only a limited number of points in the SN simulation, more explicitly the first nSimPoints={0} points after the critical point {1} where the chi sphere has to end to satisfy the Raffelt bound.".format(nPointsSim, iSphere))
         print("Using more points INCREASES the opacity, moving the couplings where the Raffelt bound is met to SMALLER values.")
@@ -137,13 +139,13 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
 '''
 # Examples
 
-checkModel_FS(3., 1/3, 1e-5, 1.)
-checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="inv")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="CM")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=4, nPointsSim=2, approx="exact")
+#checkModel_FS(3., 1/3, 1e-5, 1.)
+#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="CM")
+#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="inv")
+#checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="exact")
 
-getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
-getCoupling_TR(3., 1/3, 1, scat=1, approx="inv", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=1, approx="CM", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=1, approx="exact", nPointsSim=2)
+#getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
+getCoupling_TR(3., 1/3, 1, scat=4, approx="CM", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=4, approx="inv", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=4, approx="exact", nPointsSim=2)
 '''
