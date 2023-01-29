@@ -5,6 +5,7 @@ import scipy.interpolate as itp
 import vegas
 import time
 import cross_sections as cs
+import helper
 
 '''
 Main calculations for the project. The methods dQdR and lambdaInvMean are called by main.py.
@@ -74,46 +75,48 @@ def rosselandNorm(xChi):
     return normR
 
 # CM approximation #
-def lambdaInvMean_CM(mL, mChi, mu, T, iSigma, scat=2, **kwargs):
+def lambdaInvMean_CM(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
+    xChi = mChi/T
+    
     def Fdeg(m, T, mu):
         num, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1) * (1-1/(np.exp(x-mu/T)+1)), m/T, np.inf)
         denom, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
         return num/denom
-    FdegLm=Fdeg(mL, T, mu)
-    FdegLp=Fdeg(mL, T, -mu)
-    FdegChi=Fdeg(mChi, T, T*0.)
-
-    xChi = mChi/T
-    xL = mL/T
+    FdegChi=Fdeg(mChi, T, T*0.) 
 
     def n(m, T, mu):
         fac, _ = itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
         return 2/(2*np.pi**2) * T**3 * fac
-    nLm = n(mL, T, mu)
-    nLp = n(mL, T, -mu)
     nChi = n(mChi, T, T*0.)
     
-    def sigma_2DM(x):
+    def sigma_2DM(x, mL, iSigma):
         y1 = 2*xChi**2 + 2*x**2
         sigmaVal=cs.sigmaPropagator_2DM(mL, mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
-    def sigma_1DM(x):
+    def sigma_1DM(x, mL, iSigma):
+        xL = mL/T
         y1 = xChi**2 + xL**2 + 2*x**2
         sigmaVal=cs.sigmaPropagator_1DM(mL, mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
-    def sigma_DMself_s(x):
+    def sigma_DMself_s(x, mL, iSigma):
         y1 = 2*xChi**2 + 2*x**2
         sigmaVal=cs.sigmaPropagator_DMself_s(mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
-    def sigma_DMself_t(x):
+    def sigma_DMself_t(x, mL, iSigma):
         y1 = 2*xChi**2 + 2*x**2
         sigmaVal=cs.sigmaPropagator_DMself_t(mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
     def lambdaFunc(x):
-        Gamma = nChi * sigma_2DM(x)*FdegLm*FdegLp * (1-xChi**4/x**4)**.5
-        Gamma += nLm * sigma_1DM(x)*FdegLm*FdegChi * (1-xL**2*xChi**2/x**4)**.5 if (scat==2 or scat==4) else 0.
-        Gamma += nChi * sigma_DMself_s(x)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
-        Gamma += 2 * nChi * sigma_DMself_t(x)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
+        def GammaFunc(mL, mu, iSigma):
+            xL = mL/T
+            Gamma = nChi * sigma_2DM(x, mL, iSigma)*Fdeg(mL, T, mu)*Fdeg(mL, T, -mu) * (1-xChi**4/x**4)**.5
+            Gamma += n(mL, T, mu) * sigma_1DM(x, mL, iSigma)*Fdeg(mL, T, mu)*FdegChi * (1-xL**2*xChi**2/x**4)**.5 if (scat==2 or scat==4) else 0.
+            Gamma += nChi * sigma_DMself_s(x, mL, iSigma)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
+            Gamma += 2 * nChi * sigma_DMself_t(x, mL, iSigma)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
+            return Gamma
+        GammaMu = GammaFunc(mmu, mu_mu, 0)
+        GammaNu = GammaFunc(0., mu_nu, 1)
+        Gamma = GammaMu+2*GammaNu
         lambd = (1-xChi**2/x**2)**.5 / Gamma if Gamma>1e-50 else 1e-50 # sigma returns exactly 0, because area is kinematically forbidden -> no contribution to integral
         return lambd
     def f(x):
@@ -121,8 +124,7 @@ def lambdaInvMean_CM(mL, mChi, mu, T, iSigma, scat=2, **kwargs):
         weight = rosselandWeight(x, xChi)
         ret = lambd*weight
         return ret 
-    res, _=itg.quad(f, np.max([xChi, (2*xL**2-xChi**2)**.5]) if (scat==1 and 2*xL*2-xChi**2>0) else xChi,
-                    np.inf, epsrel=1e-2)    
+    res, _=itg.quad(f, xChi, np.inf, epsrel=1e-2)    
     norm= rosselandNorm(xChi)
     lambdaMeanInv = norm/res if res>1e-50 else 1e-50
     return lambdaMeanInv
@@ -234,19 +236,22 @@ def integ_DMScat_inv(mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     norm = rosselandNorm(xChi)
     return res/norm
 
-def lambdaInvMean_inv(mL, mChi, mu, T, iSigma, scat=2, **kwargs): 
+def lambdaInvMean_inv(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs): 
     def Fdeg(m, T, mu):
         num, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1) * (1-1/(np.exp(x-mu/T)+1)), m/T, np.inf)
         denom, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
         return num/denom
-    FdegLm=Fdeg(mL, T, mu)
-    FdegLp=Fdeg(mL, T, -mu)
     FdegChi=Fdeg(mChi, T, T*0.)
 
-    lambdaInvMean = integ_MuAnn_inv(mL, mChi, mu, T, iSigma, **kwargs) *FdegLm *FdegLp
-    lambdaInvMean += integ_MuScat_inv(mL, mChi, mu, T, iSigma, **kwargs) *FdegLm *FdegChi if (scat==2 or scat==4) else 0.
-    lambdaInvMean += integ_DMAnn_inv(mChi, T, iSigma, **kwargs) *FdegChi**2 if scat==4 else 0.
-    lambdaInvMean += 2*integ_DMScat_inv(mChi, T, iSigma, **kwargs) *FdegChi**2 if scat==4 else 0.
+    def lambdaInvFunc(mL, mu, iSigma):
+        lambdaInvMean = integ_MuAnn_inv(mL, mChi, mu, T, iSigma, **kwargs) *Fdeg(mL, T, mu) *Fdeg(mL, T, -mu)
+        lambdaInvMean += integ_MuScat_inv(mL, mChi, mu, T, iSigma, **kwargs) *Fdeg(mL, T, mu) *FdegChi if (scat==2 or scat==4) else 0.
+        lambdaInvMean += integ_DMAnn_inv(mChi, T, iSigma, **kwargs) *FdegChi**2 if scat==4 else 0.
+        lambdaInvMean += 2*integ_DMScat_inv(mChi, T, iSigma, **kwargs) *FdegChi**2 if scat==4 else 0.
+        return lambdaInvMean
+    lambdaInvMeanMu = lambdaInvFunc(mmu, mu_mu, 0)
+    lambdaInvMeanNu = lambdaInvFunc(0., mu_nu, 1)
+    lambdaInvMean = lambdaInvMeanMu + 2*lambdaInvMeanNu
     return lambdaInvMean
 
 # exact treatment #
@@ -337,13 +342,11 @@ def integ_DMScat_exact(x2, mChi, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     res=integ(f, nitn=nIt, neval=nEval, alpha=al).mean
     return res
 
-def lambdaInvMean_exact(mL, mChi, mu, T, iSigma, scat=2, xMax=1e2, xSteps=10, **kwargs):
+def lambdaInvMean_exact(mmu, mChi, mu_mu, mu_nu, T, scat=2, xMax=1e2, xSteps=10, **kwargs):
     def Fdeg(m, T, mu):
         num, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1) * (1-1/(np.exp(x-mu/T)+1)), m/T, np.inf)
         denom, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
         return num/denom
-    FdegLm=Fdeg(mL, T, mu)
-    FdegLp=Fdeg(mL, T, -mu)
     FdegChi=Fdeg(mChi, T, T*0.)
 
     xChi=mChi/T
@@ -355,10 +358,15 @@ def lambdaInvMean_exact(mL, mChi, mu, T, iSigma, scat=2, xMax=1e2, xSteps=10, **
     xFirst = np.exp(np.linspace(np.log(xMin), np.log(xMax), xSteps))
     Gamma = np.zeros(xSteps)
     for i in range(xSteps):
-        Gamma[i] = integ_MuAnn_exact(xFirst[i], mL, mChi, mu, T, iSigma, **kwargs)
-        Gamma[i] += integ_MuScat_exact(xFirst[i], mL, mChi, mu, T, iSigma, **kwargs) if (scat==2 or scat==4) else 0.
-        Gamma[i] += integ_DMAnn_exact(xFirst[i], mChi, T, iSigma, **kwargs) if scat==4 else 0.
-        Gamma[i] += integ_DMScat_exact(xFirst[i], mChi, T, iSigma, **kwargs) if scat==4 else 0.
+        def GammaFunc(mL, mu, iSigma):
+            Gamma = integ_MuAnn_exact(xFirst[i], mL, mChi, mu, T, iSigma, **kwargs) * Fdeg(mL, T, mu) * Fdeg(mL, T, -mu)
+            Gamma += integ_MuScat_exact(xFirst[i], mL, mChi, mu, T, iSigma, **kwargs) * Fdeg(mL, T, mu) * FdegChi if (scat==2 or scat==4) else 0.
+            Gamma += integ_DMAnn_exact(xFirst[i], mChi, T, iSigma, **kwargs) * FdegChi**2 if scat==4 else 0.
+            Gamma += integ_DMScat_exact(xFirst[i], mChi, T, iSigma, **kwargs) * FdegChi**2 if scat==4 else 0.
+            return Gamma
+        GammaMu = GammaFunc(mmu, mu_mu, 0)
+        GammaNu = GammaFunc(0., mu_nu, 1)
+        Gamma[i] = GammaMu + 2*GammaNu
         
     #interpolate over array
     GammaFunc = lambda x: np.exp(itp.interp1d(np.log(xFirst), np.log(Gamma), kind="linear")(np.log(x)))

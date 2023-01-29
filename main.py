@@ -81,9 +81,7 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
     t00 = time.time()
     for i in range(nPointsSim):
         t0 = time.time()
-        lambdaInv_mu = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], T[iSphere+i], 0, scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
-        lambdaInv_nu = calc.lambdaInvMean(0., mChi, mu_numu[iSphere+i], T[iSphere+i], 1, scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
-        lambdaInv[i] = lambdaInv_mu + 2*lambdaInv_nu
+        lambdaInv[i] = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], mu_numu[iSphere+i], T[iSphere+i], scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
         t1 = time.time()
         if i==0 and out:
             print(f"Estimate: {(t1-t0)*nPointsSim:.2f} s = {(t1-t0)/60*nPointsSim:.2f} min")  
@@ -111,15 +109,18 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
         return (Q - helper.Qbound)/(Q + helper.Qbound)
     try:
         sol = opt.root_scalar(checkFS, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
-    except ValueError:
-        print(f"ERROR: No solution in the range [{guessLower}, {guessUpper}]. Please adapt the range.")
-        return None
+    except ValueError as e:
+        if len(e.args)>0 and e.args[0].__contains__("a, b must bracket a root"): #catch only "no solution error"
+            print(f"ERROR: No solution in the range [{guessLower}, {guessUpper}]. Please adapt the range.")
+            return defaultVal
+        else:
+            raise e
     gL = sol.root
     if out:
         print("Coupling with FSLumi = RaffeltLumi: gL = {0:.1e}".format(gL))
     return gL
 
-def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-10, guessUpper=1e0, scat=2, approx="inv", outCheck=False, out=True):   
+def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-5, guessUpper=1e0, scat=2, approx="inv", outCheck=False, out=True):   
     # calculate iSphere
     R, T, _, _, _, _, _, _ = helper.unpack(nSim)
     mChi = mChiOvermZp*mZp
@@ -147,12 +148,12 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
 # Examples
 
 checkModel_FS(3., 1/3, 1e-5, 1.)
-checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="CM")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="inv")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=1, nPointsSim=2, approx="exact")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="CM")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="inv")
+checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="exact")
 
 getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
-getCoupling_TR(3., 1/3, 1, scat=4, approx="CM", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=4, approx="inv", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=4, approx="exact", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=2, approx="CM", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=2, approx="inv", nPointsSim=2)
+getCoupling_TR(3., 1/3, 1, scat=2 approx="exact", nPointsSim=2)
 '''
