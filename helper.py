@@ -20,8 +20,18 @@ km2invMeV=5.1e15
 MeV2invfm=5.1e-3
 invcmtoMeV= 1/5.1e10
 
-Qbound=5.68e52 #in erg/s
-Qbound*=erg2MeV*invs2MeV #MeV
+Qbound1=5.68e52 #in erg/s
+Qbound2=1.2e53
+def getQbound(nSim):
+    if nSim==1:
+        Qbound = Qbound1
+    elif nSim==2:
+        Qbound = Qbound2
+    else:
+        print(f"Warning: Neutrino luminosity for simulation {nSim} not hard-coded. Defaulting to the luminosity for simulation 1.")
+        Qbound = Qbound1        
+    Qbound*=erg2MeV*invs2MeV #MeV
+    return Qbound
 
 ### data loader
 start = "data/"
@@ -78,9 +88,10 @@ def getTrappingLumiOne(xChi, R, T):
     Qtheo=2/np.pi * R**2* T**4 * fac #4 DM-Freiheitsgrade
     return Qtheo
 
-def getRadiusSphere(mChi, R, T, out=False):
+def getRadiusSphere(mChi, R, T, nSim=1, out=False):
     Qtheo=getTrappingLumi(mChi, R, T)
     iCrit=len(R)-1
+    Qbound = getQbound(nSim)
 
     while(iCrit > 0):
         if(Qtheo[iCrit] < Qbound):

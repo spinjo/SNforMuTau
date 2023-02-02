@@ -34,7 +34,7 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
 '''
 
 #SN point with largest contribution: 62
-def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, out=True):
+def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, approx="exact", out=True):
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
@@ -45,8 +45,8 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ou
     t00 = time.time()
     for i in range(N):
         t0 = time.time()
-        dQdR_mu = calc.dQdR(helper.mmu, mChi, mu_mu[n1+i], T[n1+i], R[n1+i], 0, mZp=mZp, gChi=gChi, gL=gL)
-        dQdR_nu = calc.dQdR(0., mChi, mu_numu[n1+i], T[n1+i], R[n1+i], 1, mZp=mZp, gChi=gL*gChiOvergL, gL=gL)
+        dQdR_mu = calc.dQdR(0., mChi, mu_mu[n1+i], T[n1+i], R[n1+i], 0, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
+        dQdR_nu = calc.dQdR(0., mChi, mu_numu[n1+i], T[n1+i], R[n1+i], 1, mZp=mZp, gChi=gL*gChiOvergL, gL=gL, approx=approx)
         dQdR[i] = dQdR_mu + 2*dQdR_nu #factor 2 because need both nu_mu and nu_tau
         t1 = time.time()
         if i==0 and out:
@@ -59,10 +59,10 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ou
     if(out):
         if(Q > helper.Qbound):
             print(f"### Model excluded by free-streaming ###")
-            print("Free-streaming luminosity is {0:.2e} MeV^2, this is LARGER than the Raffelt bound {1:.2e} MeV^2.".format(Q, helper.Qbound))
+            print("Free-streaming luminosity is {0:.2e} MeV^2, this is LARGER than the Raffelt bound {1:.2e} MeV^2.".format(Q, helper.getQbound(nSim)))
         else:
             print(f"### Model not excluded by free-streaming ###")
-            print("Free-streaming luminosity is {0:.2e} MeV^2, this is SMALLER than the Raffelt bound {1:.2e} MeV^2.".format(Q, helper.Qbound))
+            print("Free-streaming luminosity is {0:.2e} MeV^2, this is SMALLER than the Raffelt bound {1:.2e} MeV^2.".format(Q, helper.getQbound(nSim)))
         print("NOTE: The contributions to the luminosity where calculated using only a limited number of points in the SN simulation, more explicitly points in the range rangeSim=[{0}, {1}].".format(n1, n2))
         print("Using more points INCREASES the free-streaming luminosity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return Q
@@ -73,7 +73,7 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
     
     R, T, _, mu_mu, _, _, _, mu_numu = helper.unpack(nSim)
     if iSphere is None:
-        iSphere = helper.getRadiusSphere(mChi, R, T, out=False)
+        iSphere = helper.getRadiusSphere(mChi, R, T, nSim, out=False)
         if(iSphere is None):
             print(f"No radius with sufficiently large Boltzmann luminosity for mChi={mChi:.2e} MeV")
             return None
@@ -101,12 +101,13 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
         print("Using more points INCREASES the opacity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return opacity
 
-def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guessLower=1e-5, guessUpper=1e-3, outCheck=False, out=True):    
+def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guessLower=1e-5, guessUpper=1e-3, approx="exact", outCheck=False, out=True):    
     def checkFS(gL):
-        Q = checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim, nSim, out=False)
+        Q = checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim, nSim, approx=approx, out=False)
+        Qbound = helper.getQbound(nSim)
         if(outCheck):
-            print("gL = {0:.2e} \t checkFS (gL) = {1:.2e}".format(gL, (Q - helper.Qbound)/(Q + helper.Qbound)))
-        return (Q - helper.Qbound)/(Q + helper.Qbound)
+            print("gL = {0:.2e} \t checkFS (gL) = {1:.2e}".format(gL, (Q - Qbound)/(Q + Qbound)))
+        return (Q - Qbound)/(Q + Qbound)
     try:
         sol = opt.root_scalar(checkFS, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
     except ValueError as e:
@@ -125,7 +126,7 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
     R, T, _, _, _, _, _, _ = helper.unpack(nSim)
     mChi = mChiOvermZp*mZp
     for i in range(nPointsSim):
-        iSphere = helper.getRadiusSphere(mChi, R, T, out=False) 
+        iSphere = helper.getRadiusSphere(mChi, R, T, nSim, out=False) 
     if(iSphere is None):
         print(f"No radius with sufficiently large Boltzmann luminosity for mChi={mChi:.2e} MeV")
         return None
@@ -143,11 +144,14 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
     if out:
         print("Coupling with opacity = 2/3: gL = {0:.1e} ({1})".format(gL, approx))
     return gL
+#checkModel_FS(3000., 0., 1e-5, 1., rangeSim=[60,65], approx="exact")
+#checkModel_FS(3000., 0., 1e-5, 1., rangeSim=[60,65], approx="CM")
 
+getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], approx="exact", outCheck=True)
+getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], approx="CM", outCheck=True)
 '''
 # Examples
 
-checkModel_FS(3., 1/3, 1e-5, 1.)
 checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="CM")
 checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="inv")
 checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="exact")

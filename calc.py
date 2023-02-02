@@ -24,8 +24,16 @@ Main calculations for the project. The methods dQdR and lambdaInvMean are called
 '''
 
 ### free-streaming
-def dQdR(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
-    def intf1(x1, x2, y1, mL, mChi, mu, T, iSigma, statistics=0, **kwargs):
+def dQdR(*args, approx="exact", **kwargs):
+    if approx=="exact":
+        return dQdR_exact(*args, **kwargs)
+    elif approx=="CM":
+        return dQdR_CM(*args, **kwargs)
+    else:
+        raise ValueError(f"ERROR: Approximation {approx} not implemented. Use one of approx=exact,CM")
+    
+def dQdR_exact(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
+    def intf1(x1, x2, y1, mL, mChi, mu, T, iSigma, **kwargs):
         sigmaVal=cs.sigmaPropagator_0DM(mL, mChi, T, y1, iSigma, **kwargs)
         stat=1/(np.exp(x1+mu/T)+1) *1/(np.exp(x2-mu/T)+1)
         facAverage=(x1+x2) * (x1**2-(mL/T)**2)**.5 * (x2**2-(mL/T)**2)**.5 * stat
@@ -48,6 +56,26 @@ def dQdR(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
     ret = 4*np.pi * R**2 * 1/(4*np.pi**4)*T**7 * fac
     return ret
 
+def dQdR_CM(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
+    xL = mL/T
+    xChi = mChi/T
+    def n(m, T, mu):
+        fac, _ = itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
+        return 2/(2*np.pi**2) * T**3 * fac
+    nL = n(mL, T, mu)
+    
+    def intf(x):
+        y1 = 2*(x**2+xL**2)
+        sigmaVal = cs.sigmaPropagator_0DM(mL, mChi, T, y1, iSigma, **kwargs)
+        Gamma = nL * sigmaVal * (1-xL**4/x**4)**.5
+        stat = x**3 * (1-xL**2/x**2)**.5/(np.exp(x-mu/T)+1)
+        prefac = T**4 * 2/(2*np.pi**2) #not totally sure about factors of 2
+        ret = Gamma * stat * prefac
+        return ret
+    fac, _=itg.quad(intf, xL, np.inf, epsrel=1e-2)
+    ret = 4*np.pi * R**2 * fac
+    return ret
+
 ### trapping ###
 
 # main function for trapping #
@@ -61,7 +89,7 @@ def lambdaInvMean(*args, approx="inv", scat=2, **kwargs):
     elif(approx=="CM"):
         return lambdaInvMean_CM(*args, **kwargs, scat=scat)
     else:
-        raise ValueError(f"ERROR: Approximation approx={approx} not implemented. Use one of approx=inv,CM")
+        raise ValueError(f"ERROR: Approximation approx={approx} not implemented. Use one of approx=inv,CM,exact")
 
 # helper functions
 def rosselandWeight(x, xChi):
