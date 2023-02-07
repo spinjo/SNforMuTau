@@ -40,7 +40,7 @@ def dQdR_exact(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
         facv=(1-4*(mL/T)**2/y1)**.5 *y1
         ret=facAverage*facv*sigmaVal
         return ret
-    def intf2(x):
+    def intf2(x): #transform coordinates from x=E/T to unit hypersphere (vegas can not deal with upper limit inf)
         z1, z2, cosTh=x
         x1=z1/(1-z1)
         x2=z2/(1-z2)
@@ -69,7 +69,7 @@ def dQdR_CM(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
         sigmaVal = cs.sigmaPropagator_0DM(mL, mChi, T, y1, iSigma, **kwargs)
         Gamma = nL * sigmaVal * (1-xL**4/x**4)**.5
         stat = x**3 * (1-xL**2/x**2)**.5/(np.exp(x-mu/T)+1)
-        prefac = T**4 * 2/(2*np.pi**2) #not totally sure about factors of 2
+        prefac = T**4 * 2/(2*np.pi**2) #not sure about factors of 2 here
         ret = Gamma * stat * prefac
         return ret
     fac, _=itg.quad(intf, xL, np.inf, epsrel=1e-2)
@@ -92,12 +92,12 @@ def lambdaInvMean(*args, approx="inv", scat=2, **kwargs):
         raise ValueError(f"ERROR: Approximation approx={approx} not implemented. Use one of approx=inv,CM,exact")
 
 # helper functions
-def rosselandWeight(x, xChi):
+def rosselandWeight(x, xChi): #weighting factor in the rosseland average
     weight1 = (1-xChi**2/x**2) * x**4
-    weight2 = np.exp(x)/(np.exp(x)+1)**2 if x<1e2 else np.exp(-x)
+    weight2 = np.exp(x)/(np.exp(x)+1)**2 if x<1e2 else np.exp(-x) #make things numerically stable
     return weight1 * weight2
 
-def rosselandNorm(xChi):
+def rosselandNorm(xChi): #numerator in the rosseland average
     '''Calculate normalization factor in the Rosseland average'''
     normR, _=itg.quad(lambda x: rosselandWeight(x, xChi), xChi, np.inf)
     return normR
@@ -116,7 +116,7 @@ def lambdaInvMean_CM(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
         fac, _ = itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
         return 2/(2*np.pi**2) * T**3 * fac
     nChi = n(mChi, T, T*0.)
-    
+
     def sigma_2DM(x, mL, iSigma):
         y1 = 2*xChi**2 + 2*x**2
         sigmaVal=cs.sigmaPropagator_2DM(mL, mChi, T, y1, iSigma, **kwargs)
@@ -145,7 +145,7 @@ def lambdaInvMean_CM(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
         GammaMu = GammaFunc(mmu, mu_mu, 0)
         GammaNu = GammaFunc(0., mu_nu, 1)
         Gamma = GammaMu+2*GammaNu
-        lambd = (1-xChi**2/x**2)**.5 / Gamma if Gamma>1e-50 else 1e-50 # sigma returns exactly 0, because area is kinematically forbidden -> no contribution to integral
+        lambd = (1-xChi**2/x**2)**.5 / Gamma if Gamma>1e-50 else 1e-50 # catch when sigma returns exactly 0, because area is kinematically forbidden -> no contribution to integral
         return lambd
     def f(x):
         lambd = lambdaFunc(x)
@@ -158,6 +158,7 @@ def lambdaInvMean_CM(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
     return lambdaMeanInv
 
 # inv approximation #
+# have functions that evaluate <lambda^(-1)> for each processes (can add those up)
 def integ_MuAnn_inv(mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
     xL=mL/T
@@ -283,6 +284,9 @@ def lambdaInvMean_inv(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
     return lambdaInvMean
 
 # exact treatment #
+# similar to the inv approximation, have one function for each process,
+# but the functions do now compute the Gamma and not <lambda^(-1)>
+# in other words, the results still depend on x2
 def integ_MuAnn_exact(x2, mL, mChi, mu, T, iSigma, nIt=10, nEval=500, al=.5, **kwargs):
     xChi=mChi/T
     xL=mL/T
@@ -379,7 +383,7 @@ def lambdaInvMean_exact(mmu, mChi, mu_mu, mu_nu, T, scat=2, xMax=1e2, xSteps=10,
 
     xChi=mChi/T
     if(xChi<=1e-10):
-        xChi = 1e-10
+        xChi = 1e-10 #avoid log(0)
 
     #calculate Gamma on array (2 integrations)
     xMin = xChi * (1+1e-3)
@@ -396,7 +400,7 @@ def lambdaInvMean_exact(mmu, mChi, mu_mu, mu_nu, T, scat=2, xMax=1e2, xSteps=10,
         GammaNu = GammaFunc(0., mu_nu, 1)
         Gamma[i] = GammaMu + 2*GammaNu
         
-    #interpolate over array
+    #interpolate over array (Trick: interpolate in log space to make the functions nicer)
     GammaFunc = lambda x: np.exp(itp.interp1d(np.log(xFirst), np.log(Gamma), kind="linear")(np.log(x)))
 
     #final integration

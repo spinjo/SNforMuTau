@@ -73,8 +73,6 @@ def GamZp(mZp, mChi, gL, gChi):
     return gamZp
 
 ### trapping luminosity
-twoThirds=2/3 #in case someone does not trust the two thirds
-
 def getTrappingLumi(mChi, R, T):
     Qtheo=np.ones(len(T))
     for i in range(len(T)):
@@ -85,7 +83,7 @@ def getTrappingLumiOne(xChi, R, T):
     fac=7*np.pi**4/120
     if(xChi>1e-2):
         fac, _=itg.quad(lambda x: x**2*(x**2-xChi**2)**.5 /(np.exp(x)+1), xChi, np.inf)
-    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM-Freiheitsgrade
+    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM degrees of freedom
     return Qtheo
 
 def getRadiusSphere(mChi, R, T, nSim=1, out=False):

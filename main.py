@@ -12,7 +12,7 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
   by (mZp, mChi/mZp, gL, gChi/gL) and using SN simulation points in the range
   rangeSim, where 62 is the point with the largest contribution to the integral.
   The parameter nSim controls, which of the SN simulations is used, where nSim=1
-  is the coldest and nSim=2 is the hottest.
+  is the coldest and nSim=2 is the hottest. Can use approx=exact or approx=CM.
 - checkModel_TR: Compute opacity for a given model specified by the same
   parameters as in checkModel_FS and using SN simulation points in the range
   [iSphere, iSphere+nPointsSim], where the index of the chi sphere iSphere that
@@ -26,7 +26,7 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
   decent approximation), approx=CM (fast and acceptable approximation). Finally,
   the parameter scat specifies which processes were included, with possible values
   scat=1 (only chi chi -> mu mu), scat=2 (add chi mu -> chi mu) and
-  scat=4 (add chi chi -> chi chi).
+  scat=4 (add chi chi -> chi chi in both s and t channel).
 - getCoupling_FS: Uses checkModel_FS to find the value of muon coupling gL where
   the free-streaming luminosity satisfies the Raffelt bound. Have to specify
   a range [guessLower, guessUpper] of values for gL to check.
@@ -111,7 +111,7 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
     try:
         sol = opt.root_scalar(checkFS, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
     except ValueError as e:
-        if len(e.args)>0 and e.args[0].__contains__("a, b must bracket a root"): #catch only "no solution error"
+        if len(e.args)>0 and e.args[0].__contains__("a, b must bracket a root"): #catch "no solution error"
             print(f"ERROR: No solution in the range [{guessLower}, {guessUpper}]. Please adapt the range.")
             return defaultVal
         else:
@@ -144,11 +144,7 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
     if out:
         print("Coupling with opacity = 2/3: gL = {0:.1e} ({1})".format(gL, approx))
     return gL
-#checkModel_FS(3000., 0., 1e-5, 1., rangeSim=[60,65], approx="exact")
-#checkModel_FS(3000., 0., 1e-5, 1., rangeSim=[60,65], approx="CM")
 
-getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], approx="exact", outCheck=True)
-getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], approx="CM", outCheck=True)
 '''
 # Examples
 
