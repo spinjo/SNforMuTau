@@ -65,7 +65,7 @@ def dQdR_CM(mL, mChi, mu, T, R, iSigma, nIt=10, nEval=500, **kwargs):
     nL = n(mL, T, mu)
     
     def intf(x):
-        y1 = 2*(x**2+xL**2)
+        y1 = 4*x**2
         sigmaVal = cs.sigmaPropagator_0DM(mL, mChi, T, y1, iSigma, **kwargs)
         Gamma = nL * sigmaVal * (1-xL**4/x**4)**.5
         stat = x**3 * (1-xL**2/x**2)**.5/(np.exp(x-mu/T)+1)
@@ -118,29 +118,29 @@ def lambdaInvMean_CM(mmu, mChi, mu_mu, mu_nu, T, scat=2, **kwargs):
     nChi = n(mChi, T, T*0.)
 
     def sigma_2DM(x, mL, iSigma):
-        y1 = 2*xChi**2 + 2*x**2
+        y1 = 4*x**2
         sigmaVal=cs.sigmaPropagator_2DM(mL, mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
     def sigma_1DM(x, mL, iSigma):
         xL = mL/T
-        y1 = xChi**2 + xL**2 + 2*x**2
+        y1 = xChi**2 + xL**2 + 2*(x**2 + (x**2-xChi**2)**.5 * (x**2-xL**2)**.5)
         sigmaVal=cs.sigmaPropagator_1DM(mL, mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
     def sigma_DMself_s(x, mL, iSigma):
-        y1 = 2*xChi**2 + 2*x**2
+        y1 = 4*x**2
         sigmaVal=cs.sigmaPropagator_DMself_s(mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
     def sigma_DMself_t(x, mL, iSigma):
-        y1 = 2*xChi**2 + 2*x**2
+        y1 = 4*x**2
         sigmaVal=cs.sigmaPropagator_DMself_t(mChi, T, y1, iSigma, **kwargs)
         return sigmaVal
     def lambdaFunc(x):
         def GammaFunc(mL, mu, iSigma):
             xL = mL/T
-            Gamma = nChi * sigma_2DM(x, mL, iSigma)*Fdeg(mL, T, mu)*Fdeg(mL, T, -mu) * (1-xChi**4/x**4)**.5
-            Gamma += n(mL, T, mu) * sigma_1DM(x, mL, iSigma)*Fdeg(mL, T, mu)*FdegChi * (1-xL**2*xChi**2/x**4)**.5 if (scat==2 or scat==4) else 0.
-            Gamma += nChi * sigma_DMself_s(x, mL, iSigma)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
-            Gamma += 2 * nChi * sigma_DMself_t(x, mL, iSigma)*FdegChi**2 * (1-xChi**4/x**4)**.5 if scat==4 else 0.
+            Gamma = nChi * sigma_2DM(x, mL, iSigma)*Fdeg(mL, T, mu)*Fdeg(mL, T, -mu) * 2*(1-xChi**2/x**2)**.5
+            Gamma += n(mL, T, mu) * sigma_1DM(x, mL, iSigma)*Fdeg(mL, T, mu)*FdegChi * 2**.5 * (1 + (x**2-xChi**2)**.5*(x**2-xL**2)**.5/x**2-(xL**2+xChi**2)/2/x**2)**.5 if (scat==2 or scat==4) else 0.
+            Gamma += nChi * sigma_DMself_s(x, mL, iSigma)*FdegChi**2 * 2*(1-xChi**2/x**2)**.5 if scat==4 else 0.
+            Gamma += 2 * nChi * sigma_DMself_t(x, mL, iSigma)*FdegChi**2 * 2*(1-xChi**2/x**2)**.5 if scat==4 else 0.
             return Gamma
         GammaMu = GammaFunc(mmu, mu_mu, 0)
         GammaNu = GammaFunc(0., mu_nu, 1)
