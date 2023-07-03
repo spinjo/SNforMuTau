@@ -2,7 +2,7 @@ import numpy as np
 import scipy.optimize as opt
 import time
 import helper
-import calc
+import calcMuTau as calc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -12,7 +12,7 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
   by (mZp, mChi/mZp, gL, gChi/gL) and using SN simulation points in the range
   rangeSim, where 62 is the point with the largest contribution to the integral.
   The parameter nSim controls, which of the SN simulations is used, where nSim=1
-  is the coldest and nSim=2 is the hottest. Can use approx=exact or approx=CM.
+  is the coldest and nSim=2 is the hottest.
 - checkModel_TR: Compute opacity for a given model specified by the same
   parameters as in checkModel_FS and using SN simulation points in the range
   [iSphere, iSphere+nPointsSim], where the index of the chi sphere iSphere that
@@ -23,18 +23,31 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
   the kinematics of the supernova (R, T) and not on the processes in question.
   Further, the parameter approx specifies the approximation used in the calculation
   with possible values approx=exact (takes lots of time), approx=inv (fast and
-  decent approximation), approx=CM (fast and acceptable approximation). Finally,
-  the parameter scat specifies which processes were included, with possible values
+  decent approximation).
+  Finally, the parameter scat specifies which processes were included, with possible values
   scat=1 (only chi chi -> mu mu), scat=2 (add chi mu -> chi mu) and
   scat=4 (add chi chi -> chi chi in both s and t channel).
 - getCoupling_FS: Uses checkModel_FS to find the value of muon coupling gL where
   the free-streaming luminosity satisfies the Raffelt bound. Have to specify
   a range [guessLower, guessUpper] of values for gL to check.
 - getCoupling_TR: Similar to getCoupling_FS, but calling checkModel_TR.
+
+Quick explanation for hyperparameters
+- iCompton: Switch to decide whether Compton is included (1) or not (0)
+- scat: Processes to be included in the calculation of the mean free path.
+  Possible choices are
+  1: only annihilation,
+  2: annihilation + scattering
+  4: like 2, but also with DM self-interactions
+- approx: Approximations for the mean free path calculation. Valid values are
+  "exact": Really calculate <MFP>, meaning one first has to calculate Gamma (2 numerical
+  integrals) and then integrate over its inverse (one more numerical integral)
+  "inv": Estimate <MFP> by <MFP^-1>^-1, this only requires one triple integral which is much easier
 '''
 
 #SN point with largest contribution: 62
-def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, approx="exact", out=True):
+def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, iCompton=1,
+                  out=True):
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
@@ -45,9 +58,8 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ap
     t00 = time.time()
     for i in range(N):
         t0 = time.time()
-        dQdR_mu = calc.dQdR(0., mChi, mu_mu[n1+i], T[n1+i], R[n1+i], 0, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
-        dQdR_nu = calc.dQdR(0., mChi, mu_numu[n1+i], T[n1+i], R[n1+i], 1, mZp=mZp, gChi=gL*gChiOvergL, gL=gL, approx=approx)
-        dQdR[i] = dQdR_mu + 2*dQdR_nu #factor 2 because need both nu_mu and nu_tau
+        dQdR[i] = calc.dQdR(helper.mmu, mChi, mu_mu[n1+i], mu_numu[n1+i], T[n1+i], R[n1+i], mZp=mZp,
+                            gChi=gChi, gL=gL, iCompton=iCompton, oneFermion=False, limit="full")
         t1 = time.time()
         if i==0 and out:
             print(f"Estimate: {(t1-t0)*N:.2f} s = {(t1-t0)/60*N:.2f} min")
@@ -57,7 +69,7 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ap
     Q = np.trapz(dQdR, x=R[n1:n2])
 
     if(out):
-        if(Q > helper.Qbound):
+        if Q > helper.getQbound(nSim):
             print(f"### Model excluded by free-streaming ###")
             print("Free-streaming luminosity is {0:.2e} MeV^2, this is LARGER than the Raffelt bound {1:.2e} MeV^2.".format(Q, helper.getQbound(nSim)))
         else:
@@ -67,7 +79,8 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, ap
         print("Using more points INCREASES the free-streaming luminosity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return Q
 
-def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=2, approx="inv", iSphere=None, out=True):
+def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=2, approx="inv", iSphere=None,
+                  iCompton=1, out=True):
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
@@ -81,7 +94,9 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
     t00 = time.time()
     for i in range(nPointsSim):
         t0 = time.time()
-        lambdaInv[i] = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], mu_numu[iSphere+i], T[iSphere+i], scat=scat, mZp=mZp, gChi=gChi, gL=gL, approx=approx)
+        lambdaInv[i] = calc.lambdaInvMean(helper.mmu, mChi, mu_mu[iSphere+i], mu_numu[iSphere+i],
+                                          T[iSphere+i], scat=scat, iCompton=iCompton, mZp=mZp,
+                                          gChi=gChi, gL=gL, approx=approx, oneFermion=False, limit="full")
         t1 = time.time()
         if i==0 and out:
             print(f"Estimate: {(t1-t0)*nPointsSim:.2f} s = {(t1-t0)/60*nPointsSim:.2f} min")  
@@ -90,8 +105,8 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
         print(f"Total time used: {t01-t00:.2f} s = {(t01-t00)/60:.2f} min")          
     opacity = np.trapz(lambdaInv, R[iSphere:iSphere+nPointsSim])
 
-    if(out):
-        if(opacity < 2/3):
+    if out:
+        if opacity < 2/3:
             print(f"### Model excluded by Boltzmann trapping ({approx} approximation) ###\nOpacity at the critical radius where the corresponding Boltzmann luminosity satisfies the Raffelt bound is {opacity:.2e}.")
             print("This is SMALLER than the value 2/3 that defines the critical radius, resulting in a SMALLER radius of the DM sphere and therefore a Boltzmann luminosity LARGER than the Raffelt bound")
         else:
@@ -101,7 +116,8 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
         print("Using more points INCREASES the opacity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return opacity
 
-def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guessLower=1e-5, guessUpper=1e-3, approx="exact", outCheck=False, out=True):    
+def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guessLower=1e-5, guessUpper=1e-3,
+                   iCompton=1, outCheck=False, out=True):    
     def checkFS(gL):
         Q = checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim, nSim, approx=approx, out=False)
         Qbound = helper.getQbound(nSim)
@@ -121,7 +137,8 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
         print("Coupling with FSLumi = RaffeltLumi: gL = {0:.1e}".format(gL))
     return gL
 
-def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-5, guessUpper=1e0, scat=2, approx="inv", outCheck=False, out=True):   
+def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-6, guessUpper=1e-2,
+                   scat=2, approx="inv", iCompton=1, outCheck=False, out=True):   
     # calculate iSphere
     R, T, _, _, _, _, _, _ = helper.unpack(nSim)
     mChi = mChiOvermZp*mZp
@@ -134,7 +151,7 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
         opacity = checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim, nSim, scat=scat, approx=approx, iSphere=iSphere, out=False)
         if(outCheck):
             print("gL = {0:.2e} \t checkTR (gL) = {1:.2e}".format(gL, (opacity - 2/3)/(opacity + 2/3)))
-        return (opacity - helper.twoThirds)/(opacity + helper.twoThirds)
+        return (opacity - 2/3)/(opacity + 2/3)
     try:
         sol = opt.root_scalar(checkTR, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
     except ValueError:
@@ -148,12 +165,11 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
 '''
 # Examples
 
-checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="CM")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="inv")
-checkModel_TR(3., 1/3, 1e-3, 1., scat=2, nPointsSim=2, approx="exact")
+checkModel_FS(3., 1/3, 1e-9, 1.)
+checkModel_TR(3., 1/3, 1e-6, 1., scat=2, approx="inv")
+checkModel_TR(3., 1/3, 1e-6, 1., scat=2, approx="exact")
 
-getCoupling_FS(3., 1/3, 1, rangeSim=[55,70], outCheck=True)
-getCoupling_TR(3., 1/3, 1, scat=2, approx="CM", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=2, approx="inv", nPointsSim=2)
-getCoupling_TR(3., 1/3, 1, scat=2 approx="exact", nPointsSim=2)
+getCoupling_FS(3., 1/3, 1)
+getCoupling_TR(3., 1/3, 1, scat=2, approx="inv")
+getCoupling_TR(3., 1/3, 1, scat=2 approx="exact")
 '''

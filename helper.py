@@ -12,6 +12,7 @@ mmu= 105.6583755
 mtau=1776.86
 mp=938.272088
 mn=939.565420
+alphaEM = 1/137.035999084
 
 # transforming units
 erg2MeV=6.2415e5
@@ -61,18 +62,29 @@ def unpack(n):
 
 ### Decay widths
 def gamZp_i(mZp, mi, gi):
+    if mZp < 2*mi:
+        return 0.
     gamContr=mZp/(12*np.pi) * gi**2 *(1+2*mi**2/mZp**2) *(1-4*mi**2/mZp**2)**.5
     return gamContr
-def GamZp(mZp, mChi, gL, gChi):    
+def GamZpMuTau(mZp, mL, mChi, gL, gChi):    
     gamZp=0.
-    if(mZp > 2*mmu):
-        gamZp+= gamZp_i(mZp, mmu, gL)
+    if(mZp > 2*mL):
+        gamZp+= gamZp_i(mZp, mL, gL)
     if(mZp > 2*mChi):
         gamZp+= gamZp_i(mZp, mChi, gChi)
     gamZp+=2*gamZp_i(mZp, 0., gL)
     return gamZp
+def GamZpOne(mZp, mL, mChi, gL, gChi): #if only one SM fermion couples to Z'
+    gamZp=0.
+    if(mZp > 2*mL):
+        gamZp+= gamZp_i(mZp, mL, gL)
+    if(mZp > 2*mChi):
+        gamZp+= gamZp_i(mZp, mChi, gChi)
+    return gamZp
 
 ### trapping luminosity
+twoThirds=2/3 #in case someone does not trust the two thirds
+
 def getTrappingLumi(mChi, R, T):
     Qtheo=np.ones(len(T))
     for i in range(len(T)):
@@ -83,7 +95,7 @@ def getTrappingLumiOne(xChi, R, T):
     fac=7*np.pi**4/120
     if(xChi>1e-2):
         fac, _=itg.quad(lambda x: x**2*(x**2-xChi**2)**.5 /(np.exp(x)+1), xChi, np.inf)
-    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM degrees of freedom
+    Qtheo=2/np.pi * R**2* T**4 * fac #4 DM-Freiheitsgrade
     return Qtheo
 
 def getRadiusSphere(mChi, R, T, nSim=1, out=False):
