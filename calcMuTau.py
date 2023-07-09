@@ -63,7 +63,7 @@ def lambdaInvMean_inv(mL, mChi, mu_mu, mu_numu, T, scat=2, iCompton=0, giveRatio
     else:
         return lIM
 
-def lambdaInvMean_exact(mL, mChi, mu_mu, mu_numu, T, scat=2, xMax=1e3, xSteps=50, iCompton=0, giveRatios=False, **kwargs): #50 xsteps?
+def lambdaInvMean_exact(mL, mChi, mu_mu, mu_numu, T, scat=2, xMax=1e3, xSteps=50, iCompton=0, **kwargs):
     def Fdeg(m, T, mu):
         num, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1) * (1-1/(np.exp(x-mu/T)+1)), m/T, np.inf)
         denom, _=itg.quad(lambda x: x*(x**2-(m/T)**2)**.5/(np.exp(x-mu/T)+1), m/T, np.inf)
@@ -76,7 +76,7 @@ def lambdaInvMean_exact(mL, mChi, mu_mu, mu_numu, T, scat=2, xMax=1e3, xSteps=50
         xChi = xChiReg
 
     #calculate Gamma on array (2 integrations)
-    xMin = xChi * (1.+1.e-6) #avoid edge effects
+    xMin = xChi * (1.+1.e-6) #avoid boundary effects
     xFirst = np.exp(np.linspace(np.log(xMin), np.log(xMax), xSteps)) #=x2
     Gamma = np.zeros(xSteps)
     for i in range(xSteps):
@@ -99,7 +99,7 @@ def lambdaInvMean_exact(mL, mChi, mu_mu, mu_numu, T, scat=2, xMax=1e3, xSteps=50
     mask = np.array(Gamma<GammaReg)
     Gamma[mask] = GammaReg
     lambd = (1-xChi**2/xFirst**2)**.5 / Gamma
-    weighting = calcIndividual.rosselandWeight(xFirst, xChi)
+    weighting = calcIndividual.mfpweight(xFirst, xChi)
     integrand_vals = lambd * weighting
     intf = lambda x: np.exp(itp.interp1d(np.log(xFirst), np.log(integrand_vals), kind="linear")(np.log(x)))
 
@@ -112,14 +112,13 @@ def lambdaInvMean_exact(mL, mChi, mu_mu, mu_numu, T, scat=2, xMax=1e3, xSteps=50
     integ=vegas.Integrator([[xMin, xMax]])
     res=integ(intf2, nitn=10, neval=2000, alpha=.5).mean
     
-    norm = calcIndividual.rosselandNorm(xChi)
+    norm = calcIndividual.mfpnorm(xChi)
     lambdaInv = norm/res
 
     if iCompton==1:
-        lambdaInv_Compton = calcIndividual.lambdaInv_Compt(iL, mL, mChi, mu, T, iSigma, **kwargs)
+        iL=1
+        mu=mu_mu
+        lambdaInv_Compton = calcIndividual.lambdaInv_Compt(iL, mL, mChi, mu, T, **kwargs)
         lambdaInv += lambdaInv_Compton
 
-    if giveRatios:
-        raise ValueError("ValueError: giveRatios not implemented for exact trapping")
-    else:
-        return lambdaInv
+    return lambdaInv

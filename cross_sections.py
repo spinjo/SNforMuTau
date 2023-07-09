@@ -1,6 +1,10 @@
 import numpy as np
 import helper
 
+'''
+Listing of all cross-sections needed for the project
+'''
+
 ### free-streaming
 def y_s(xm, x1, x2, cosTh):
     ret=2*(xm**2 + x1*x2 - (x1**2-xm**2)**.5 * (x2**2-xm**2)**.5 * cosTh)
@@ -9,7 +13,7 @@ def y_t(xL, xChi, x1, x2, cosTh): #symmetric in x1/x2 or xL/xChi
     ret=xL**2 + xChi**2 + 2*(x1*x2 - (x1**2-xL**2)**.5 * (x2**2-xChi**2)**.5 * cosTh)
     return ret
 
-# cross-sections (without propagator)
+# s-channel cross-sections (without propagator)
 def sigma0_Ann_S(epsL, epsDM, y1, LS, LP, DMS, DMP):
     sig= 1/(16*np.pi*y1) * (y1 - 4*epsDM)**.5/(y1-4*epsL)**.5 * (LP**2 * y1 + LS**2*(y1-4*epsL))* (y1 * (DMP**2+DMS**2) - 4*epsDM*DMS**2)
     return sig
@@ -50,7 +54,7 @@ sigma0_Ann=np.array([sigma0_Ann_SS, sigma0_Ann_SP, sigma0_Ann_PS, sigma0_Ann_PP,
 sigmaName = ["SS", "SP", "PS", "PP", "VV", "VA", "AV", "AA", "RR", "LV", "TT", "TAT"]
 nSig=len(sigma0_Ann)
 
-# full cross-section
+# full s-channel cross-sections (including propagator)
 def sigmaFS(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1, Lambda=1, oneFermion=False, diff=None, limit="full", **kwargs):
     xL = mL/T
     xChi = mChi/T
@@ -69,7 +73,7 @@ def sigmaFS(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1, Lambda=1, oneFermion=F
     return sigma
 
 ### trapping
-# cross sections for general mZp
+# t-channel processes (for general mZp)
 def sigma0_Scat_V(epsL, epsDM, epsZ, y, LV, LA, DMV, DMA):
     sig=1/(8*np.pi) * \
         ( 1/(y*epsZ) /(y**2+y*(-2*epsL-2*epsDM+epsZ)+(epsL-epsDM)**2) *\
@@ -86,7 +90,7 @@ sigma0_Scat=np.array([None, None, None, None,
                       sigma0_Scat_VV, None, None, None,
                       None, sigma0_Scat_LV, None, None]) #only need some combinations
 
-# cross sections in EFT limit (large mZp)
+# t-channel processes in EFT regime
 def sigma0_Scat_S_EFT(epsL, epsDM, y1, LS, LP, DMS, DMP):
     sig= 1/(48*np.pi*y1**3) * (LP**2 *(-2*epsL*(epsDM+y1) +epsL**2 +(epsDM-y1)**2) *((DMP**2 + DMS**2)*(-2*epsL*(epsDM+y1) + epsL**2+(epsDM-y1)**2) + 6*epsDM * y1 * DMS**2)
                                  + LS**2*(6*epsL*y1*((DMP**2+DMS**2)*(-2*epsL*(epsDM+y1)+epsL**2+(epsDM-y1)**2)+8*epsDM*y1*DMS**2)
@@ -129,7 +133,7 @@ sigma0_Scat_EFT=np.array([sigma0_Scat_SS_EFT, sigma0_Scat_SP_EFT, sigma0_Scat_PS
                           sigma0_Scat_VV_EFT, sigma0_Scat_VA_EFT, sigma0_Scat_AV_EFT, sigma0_Scat_AA_EFT,
                           sigma0_Scat_RR_EFT, sigma0_Scat_LV_EFT, sigma0_Scat_TT_EFT, sigma0_Scat_TAT_EFT]) #use symmetry
 
-# full expressions for the cross-sections
+# ready-to-use cross-sections for trapping processes
 def sigmaTR_t(mL, mChi, T, y1, iSigma, mZp=1, gL=1, gChi=1, oneFermion=False, limit="full", Lambda=1):
     xL = mL/T
     xChi = mChi/T
@@ -155,7 +159,7 @@ def sigmaTR_DMself_t(mChi, T, y1, iSigma, gChi=1, gL=1, mZp=1, **kwargs):
     sigma = sigmaTR_t(mChi, mChi, T, y1, iSigma, mZp=mZp, gChi=gChi, gL=gChi, **kwargs)
     return sigma
 
-### Compton
+# resonant Compton processes
 def sigmaFS_Compton_resonant(shat, mZp, mL, mChi, gChi, gL, oneFermion=False, **kwargs):
     xP = mZp**2 / mL**2
     fac1 = np.pi * helper.alphaEM * (gChi**2/4/np.pi) / mL**2

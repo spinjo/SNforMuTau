@@ -30,24 +30,41 @@ Main file for evaluation of SN limits on L_mu-tau models, including 4 methods:
 - getCoupling_FS: Uses checkModel_FS to find the value of muon coupling gL where
   the free-streaming luminosity satisfies the Raffelt bound. Have to specify
   a range [guessLower, guessUpper] of values for gL to check.
-- getCoupling_TR: Similar to getCoupling_FS, but calling checkModel_TR.
+- getCoupling_TR: Similar to getCoupling_FS, but for trapping using checkModel_TR.
 
-Quick explanation for hyperparameters
+Quick explanation for parameters
 - iCompton: Switch to decide whether Compton is included (1) or not (0)
 - scat: Processes to be included in the calculation of the mean free path.
-  Possible choices are
-  1: only annihilation,
+  Possible choices are (see 2307.03143 for more information)
+  1: only annihilation
   2: annihilation + scattering
   4: like 2, but also with DM self-interactions
 - approx: Approximations for the mean free path calculation. Valid values are
   "exact": Really calculate <MFP>, meaning one first has to calculate Gamma (2 numerical
   integrals) and then integrate over its inverse (one more numerical integral)
   "inv": Estimate <MFP> by <MFP^-1>^-1, this only requires one triple integral which is much easier
+
+- nSim: Simulation to be used, see helper. Available are 0 (SFHo-s18.6 = medium T),
+  1 (SFHo-s18.80 = coolest), 2 (SFHo-s20.0 = hottest), LS220 (different equation of state)  
+- rangeSim: SN radius setpoint region in simulations to be used for estimating the free-streaming luminosity.
+  We use rangeSim=[40,100] for the paper, but a good estimate can already be obtained with
+  rangeSim=[60,65]. The largest contribution comes from the setpoint 62.
+- nPointsSim: Additional SN radius setpoints to be used for estimating the mean free path (MFP)
+  in the trapping regime. We start at the setpoint corresponding to the chi sphere and count from there.
+  We use nPointsSim=50 for the paper, but a good estimate can already be obtained with nPointSim=10.
+- guessLower, guessUpper, defaultVal: The functions getCoupling_FS, getCoupling_TR use a root finder that
+  repeatedly calls checkModel_FS, checkModel_TR until it finds a suitable root. As input it requires
+  the boundaries of the interval [guessLower, guessUpper]. If no solution is found, then it returns
+  defaultVal.
 '''
 
-#SN point with largest contribution: 62
-def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, iCompton=1,
+def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[60,65], nSim=1, iCompton=1,
                   out=True):
+    '''
+    Calculate free-streaming luminosity Q for the parameter point (mZp, mChi/mZp, gL, gChi/gL)
+    using parameters described above. The result is interpreted and compared with the Raffelt
+    bound from the neutrino luminosity.
+    '''
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
@@ -79,8 +96,18 @@ def checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim=[50,80], nSim=1, iC
         print("Using more points INCREASES the free-streaming luminosity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return Q
 
-def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=2, approx="inv", iSphere=None,
+def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=5, nSim=1, scat=2, approx="inv", iSphere=None,
                   iCompton=1, out=True):
+    '''
+    Calculate opacity (trapping regime) for the parameter point (mZp, mChi/mZp, gL, gChi/gL)
+    using parameters described above. We calculate the opacity using the radius of the chi sphere
+    that would translate into a blackbody radiation with luminosity that saturates the Raffelt bound.
+    Finally, we compare the result to the value 2/3 that actually defines the location of the chi sphere,
+    and use this result to infer whether the effective chi sphere of this parameter point has a
+    luminosity smaller or larger than the Raffelt bound.
+    Note that we could also compare results at the level of the luminosity (instead of the level of the
+    opacity as we do), but this requires an extra computational effort.
+    '''
     mChi = mChiOvermZp*mZp
     gChi = gL*gChiOvergL
     
@@ -116,10 +143,14 @@ def checkModel_TR(mZp, mChiOvermZp, gL, gChiOvergL, nPointsSim=30, nSim=1, scat=
         print("Using more points INCREASES the opacity, moving the couplings where the Raffelt bound is met to SMALLER values.")
     return opacity
 
-def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guessLower=1e-5, guessUpper=1e-3,
-                   iCompton=1, outCheck=False, out=True):    
+def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[60,65], nSim=1, guessLower=1e-10, guessUpper=1e0,
+                   defaultVal=1, iCompton=1, outCheck=True, out=True):
+    '''
+    Call checkModel_FS iteratively to find the coupling gL that saturates the Raffelt bound
+    for given (mZp, mChi/mZp, gChi/gL). 
+    '''
     def checkFS(gL):
-        Q = checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim, nSim, approx=approx, out=False)
+        Q = checkModel_FS(mZp, mChiOvermZp, gL, gChiOvergL, rangeSim, nSim, out=False)
         Qbound = helper.getQbound(nSim)
         if(outCheck):
             print("gL = {0:.2e} \t checkFS (gL) = {1:.2e}".format(gL, (Q - Qbound)/(Q + Qbound)))
@@ -128,7 +159,7 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
         sol = opt.root_scalar(checkFS, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
     except ValueError as e:
         if len(e.args)>0 and e.args[0].__contains__("a, b must bracket a root"): #catch "no solution error"
-            print(f"ERROR: No solution in the range [{guessLower}, {guessUpper}]. Please adapt the range.")
+            print(f"ERROR: No solution in the specified range [{guessLower}, {guessUpper}]. Please adapt the range.")
             return defaultVal
         else:
             raise e
@@ -137,8 +168,12 @@ def getCoupling_FS(mZp, mChiOvermZp, gChiOvergL, rangeSim=[50,80], nSim=1, guess
         print("Coupling with FSLumi = RaffeltLumi: gL = {0:.1e}".format(gL))
     return gL
 
-def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLower=1e-6, guessUpper=1e-2,
-                   scat=2, approx="inv", iCompton=1, outCheck=False, out=True):   
+def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=5, nSim=1, guessLower=1e-10, guessUpper=1e0,
+                   defaultVal=1, scat=2, approx="inv", iCompton=1, outCheck=True, out=True):   
+    '''
+    Call checkModel_FS iteratively to find the coupling gL that saturates the Raffelt bound
+    for given (mZp, mChi/mZp, gChi/gL). 
+    '''
     # calculate iSphere
     R, T, _, _, _, _, _, _ = helper.unpack(nSim)
     mChi = mChiOvermZp*mZp
@@ -154,16 +189,19 @@ def getCoupling_TR(mZp, mChiOvermZp, gChiOvergL, nPointsSim=30, nSim=1, guessLow
         return (opacity - 2/3)/(opacity + 2/3)
     try:
         sol = opt.root_scalar(checkTR, rtol=1e-1, bracket=[guessLower, guessUpper], method="toms748")
-    except ValueError:
-        print(f"ERROR: No solution in the range [{guessLower}, {guessUpper}]. Please adapt the range.")
-        return None
+    except ValueError as e:
+        if len(e.args)>0 and e.args[0].__contains__("a, b must bracket a root"): #catch "no solution error"
+            print(f"ERROR: No solution in the specified range [{guessLower}, {guessUpper}]. Please adapt the range.")
+            return defaultVal
+        else:
+            raise e
     gL = sol.root
     if out:
         print("Coupling with opacity = 2/3: gL = {0:.1e} ({1})".format(gL, approx))
     return gL
 
-'''
-# Examples
+
+# Examples #
 
 checkModel_FS(3., 1/3, 1e-9, 1.)
 checkModel_TR(3., 1/3, 1e-6, 1., scat=2, approx="inv")
@@ -171,5 +209,4 @@ checkModel_TR(3., 1/3, 1e-6, 1., scat=2, approx="exact")
 
 getCoupling_FS(3., 1/3, 1)
 getCoupling_TR(3., 1/3, 1, scat=2, approx="inv")
-getCoupling_TR(3., 1/3, 1, scat=2 approx="exact")
-'''
+getCoupling_TR(3., 1/3, 1, scat=2, approx="exact")
