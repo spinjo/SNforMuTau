@@ -35,6 +35,7 @@ def getQbound(nSim):
     return Qbound
 
 ### data loader
+# enter path to the simulation data of https://arxiv.org/abs/2005.07141 here
 start = "data/"
 file1 = start+"hydro-SFHo-s18.6-MUONS-T=0.99948092.txt"
 file2 = start+"hydro-SFHo-s18.80-MUONS-T=1.0001996.txt"
