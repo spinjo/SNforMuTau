@@ -222,7 +222,7 @@ def dQdR_Ann(
     res *= 1 / (4 * np.pi**4) * T**7  # prefactors
     res *= 4 * np.pi * R**2  # from dQ/dV to dQ/dR
 
-    res *= 1 / 2 if iSigma == 9 else 1.0  # factor 1/2 for neutrinos
+    res *= 1 / 4 if iSigma == 9 else 1.0  # factor 1/4 = (gNu/gL)**2 for neutrinos
     return res
 
 
@@ -453,7 +453,7 @@ def integ_LAnn_inv(
     res = calc_annihilation_integral(
         intf2, xChi, xL, xZp, xGammaZp, gL, nIt, nEval, limit
     )
-    res *= 1 / 2 if iSigma == 9 else 1.0  # factor 1/2 for neutrinos
+    res *= 1 / 4 if iSigma == 9 else 1.0  # factor 1/4 = (gNu/gL)**2 for neutrinos
     norm = mfpnorm(xChi)
     return res / norm
 
@@ -495,7 +495,7 @@ def integ_LScat_inv(mL, mChi, mu, T, iSigma, nIt=10, nEval=2000, al=0.5, **kwarg
         [[xL / (1 + xL), 1.0], [xChi / (1 + xChi), 1.0], [ymin / (1 + ymin), 1.0]]
     )
     res = integ(intf2, nitn=nIt, neval=nEval, alpha=al).mean
-    res *= 1 / 2 if iSigma == 9 else 1.0  # factor 1/2 for neutrinos
+    res *= 1 / 4 if iSigma == 9 else 1.0  # factor 1/4 = (gNu/gL)**2 for neutrinos
     norm = mfpnorm(xChi)
     return res / norm
 
@@ -737,7 +737,7 @@ def integ_LAnn_exact(
         intf2, xChi, xL, xZp, xGammaZp, gL, nIt, nEval, limit
     )
 
-    res *= 1 / 2 if iSigma == 9 else 1.0  # factor 1/2 for neutrinos
+    res *= 1 / 4 if iSigma == 9 else 1.0  # factor 1/4 = (gNu/gL)**2 for neutrinos
     return res
 
 
@@ -779,7 +779,7 @@ def integ_LScat_exact(
     ymin = (xL + xChi) ** 2
     integ = vegas.Integrator([[xL / (1 + xL), 1.0], [ymin / (1.0 + ymin), 1.0]])
     res = integ(intf2, nitn=nIt, neval=nEval, alpha=al).mean
-    res *= 1 / 2 if iSigma == 9 else 1.0  # factor 1/2 for neutrinos
+    res *= 1 / 4 if iSigma == 9 else 1.0  # factor 1/4 = (gNu/gL)**2 for neutrinos
     return res
 
 
