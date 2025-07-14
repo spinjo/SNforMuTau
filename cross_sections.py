@@ -177,7 +177,7 @@ def sigmaFS(
                 gL**2 * gChi**2 / ((diff * T**2) ** 2 + mZp**2 * gamZp**2)
             )
     elif limit == "eft":
-        propagator = 4 / Lambda**4
+        propagator = 1 / Lambda**4
     sigma = (
         propagator * sigma0_Ann[iSigma](xL**2, xChi**2, y1) * T**2
     )  # factor T^2 to get correct dimensions
