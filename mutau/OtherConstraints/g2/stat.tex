@@ -1,0 +1,39 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx, booktabs, siunitx}
+
+\usepackage{geometry}
+\geometry{a4paper, top=10mm, left=15mm, right=15mm, bottom=20mm}
+\usepackage[sfdefault]{FiraSans}
+\usepackage{xcolor}
+\usepackage[autostyle=false, english=british]{csquotes}
+\usepackage[final, colorlinks, linkcolor=purple, citecolor=teal, urlcolor=teal]{hyperref}
+
+\pagestyle{empty}
+
+\author{Jonas Spinner}
+\date{\today}
+\title{Event generation with transformers}
+
+\begin{document}
+
+Normal distribution
+$$\mathcal{N}_{\mu, \sigma} (x) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\Big( - \frac{(x-\mu)^2}{2\sigma^2}\Big)$$
+
+CDF of normal distribution (term $1/2$ because erf integration starts from $0$)
+$$\mathcal{C}_{\mu, \sigma} (x) = \frac{1}{2}\Big[ 1+ \text{erf}\Big( \frac{x-\mu}{\sqrt{2}\sigma}\Big)\Big]$$
+
+\paragraph{Finding $n_\sigma$ from $\Delta x$}
+Extract probability for minimal one-sided deviation $\Delta x  =x-\mu$ and standard deviation $\sigma$ from mean of normal distribution 
+$$p = \text{erf}\Big( \frac{\Delta x}{\sqrt{2}\sigma}\Big)$$
+
+Rewrite a probability $p$ (close to $1$ = large $n_\sigma$) into number of sigmas $n_\sigma$
+$$n_\sigma = \sqrt{2} \text{erfinv} (p)$$
+
+\paragraph{Finding $\Delta x$ from $n_\sigma$}
+Just invert equations from above
+$$p = \text{erf}\Big( \frac{n_\sigma}{\sqrt{2}}\Big), \qquad \Delta x = \sqrt{2}\sigma \text{erfinv}(p)$$
+
+\end{document}
