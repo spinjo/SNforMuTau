@@ -107,6 +107,6 @@ def main(cluster=True, iL=0, scat=2, nSim=1, approx="exact"):
         sys.stderr.close()
 
 
-main(cluster=False, iL=0, scat=1, nSim=1, approx="inv")
+# main(cluster=False, iL=0, scat=1, nSim=1, approx="inv")
 
-# main(cluster=True, approx="exact")
+main(cluster=True, approx="exact")

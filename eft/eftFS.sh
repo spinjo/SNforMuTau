@@ -1,8 +1,10 @@
-#!/bin/sh
-#SBATCH -D /users/ttp/jspinner/calc_v5/eft
-#SBATCH -p albatros,empire
-#SBATCH -e errFS.txt
-#SBATCH -o outFS.txt
+#!/bin/bash
+#PBS -q medium_bookworm
+#PBS -l nodes=1:ppn=4:medium_bookworm
+#PBS -l walltime=5:00:00
+#PBS -l vmem=10gb
+#PBS -d /remote/bigmem03a/spinner/SNforMuTau/eft
+#PBS -t 0-7
 
 source ../venv/bin/activate
-python mainFS.py $SLURM_ARRAY_TASK_ID
+python mainFS.py $PBS_ARRAYID

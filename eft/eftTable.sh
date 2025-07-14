@@ -1,8 +1,9 @@
-#!/bin/sh
-#SBATCH -D /users/ttp/jspinner/calc_v5/eft
-#SBATCH -p albatros,moon,empire
-#SBATCH -o outTR.txt
-#SBATCH -e errTR.txt
+#!/bin/bash
+#PBS -q medium_bookworm
+#PBS -l nodes=1:ppn=4:medium_bookworm
+#PBS -l walltime=5:00:00
+#PBS -l vmem=10gb
+#PBS -d /remote/bigmem03a/spinner/SNforMuTau/eft
 
 source ../venv/bin/activate
 python eftTable.py

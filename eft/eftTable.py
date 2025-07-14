@@ -128,7 +128,7 @@ def main(cluster=True):
         sys.stderr.close()
 
 
-main(cluster=False)
+main(cluster=True)
 
 
 def printTable(approx="exact"):
