@@ -1,10 +1,11 @@
 #!/bin/bash
-#PBS -q medium_bookworm
-#PBS -l nodes=1:ppn=4:medium_bookworm
-#PBS -l walltime=5:00:00
-#PBS -l vmem=10gb
-#PBS -d /remote/bigmem03a/spinner/SNforMuTau/eft
-#PBS -t 0-11
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=5:00:00
+#SBATCH --mem=128G
+#SBATCH --chdir=/remote/bigmem03a/spinner/SNforMuTau/eft
+#SBATCH --array=0-11
 
 source ../venv/bin/activate
-python mainTR.py $PBS_ARRAYID
+python mainTR.py $SLURM_ARRAY_TASK_ID

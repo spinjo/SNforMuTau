@@ -1,9 +1,10 @@
 #!/bin/bash
-#PBS -q medium_bookworm
-#PBS -l nodes=1:ppn=4:medium_bookworm
-#PBS -l walltime=5:00:00
-#PBS -l vmem=10gb
-#PBS -d /remote/bigmem03a/spinner/SNforMuTau/eft
+#SBATCH --partition=gshort
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=5:00:00
+#SBATCH --mem=32G
+#SBATCH --chdir=/remote/bigmem03a/spinner/SNforMuTau/eft
 
 source ../venv/bin/activate
 python eftTable.py
