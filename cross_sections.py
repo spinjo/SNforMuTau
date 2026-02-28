@@ -254,37 +254,33 @@ sigma0_Scat = np.array(
 
 # cross sections in EFT limit (large mZp)
 def sigma0_Scat_S_EFT(epsL, epsDM, y1, LS, LP, DMS, DMP):
-    sig = (
+    # Eqn. B2 in https://arxiv.org/abs/2307.03143
+    return (
         1
         / (48 * np.pi * y1**3)
         * (
-            LP**2
-            * (-2 * epsL * (epsDM + y1) + epsL**2 + (epsDM - y1) ** 2)
+            LS**2
+            * DMS**2
             * (
-                (DMP**2 + DMS**2)
-                * (-2 * epsL * (epsDM + y1) + epsL**2 + (epsDM - y1) ** 2)
-                + 6 * epsDM * y1 * DMS**2
+                y1**4
+                + 2 * y1**3 * (epsL + epsDM)
+                + 2 * y1**2 * (3 * epsL**2 - 14 * epsL * epsDM + 3 * epsDM**2)
+                + 2 * y1 * (epsL + epsDM) * (epsL - epsDM) ** 2
+                + (epsL - epsDM) ** 4
             )
             + LS**2
-            * (
-                6
-                * epsL
-                * y1
-                * (
-                    (DMP**2 + DMS**2)
-                    * (-2 * epsL * (epsDM + y1) + epsL**2 + (epsDM - y1) ** 2)
-                    + 8 * epsDM * y1 * DMS**2
-                )
-                + (-2 * epsL * (epsDM + y1) + epsL**2 + (epsDM - y1) ** 2)
-                * (
-                    (DMP**2 + DMS**2)
-                    * (-2 * epsL * (epsDM + y1) + epsL**2 + (epsDM - y1) ** 2)
-                    + 6 * epsDM * y1 * DMS**2
-                )
-            )
+            * DMP**2
+            * (epsL**2 - 2 * epsL * (epsDM - 2 * y1) + (y1 - epsDM) ** 2)
+            * (epsL - 2 * epsL * (epsDM + y1) + (y1 - epsDM) ** 2)
+            + LP**2
+            * DMS**2
+            * (epsL**2 - 2 * epsL * (y1 + epsDM) + (y1 - epsDM) ** 2)
+            * (epsL**2 + epsDM**2 - 2 * epsL * (epsDM + y1) + y1 * (y1 + 4 * epsDM))
+            + LP**2
+            * DMP**2
+            * (epsL - 2 * epsL * (y1 + epsDM) + (y1 - epsDM) ** 2) ** 2
         )
     )
-    return sig
 
 
 def sigma0_Scat_SS_EFT(epsL, epsDM, y1):
@@ -304,59 +300,38 @@ def sigma0_Scat_PP_EFT(epsL, epsDM, y1):
 
 
 def sigma0_Scat_V_EFT(epsL, epsDM, y1, LV, LA, DMV, DMA):
+    # Eqn. B2 in https://arxiv.org/abs/2307.03143
     return (
         1
         / (24 * np.pi * y1**3)
         * (
-            LA**2
+            LV**2
+            * DMV**2
             * (
-                epsL**2
-                * (
-                    -2 * epsDM * y1 * (DMA**2 + 4 * DMV**2)
-                    + 6 * epsDM**2 * (DMA**2 + DMV**2)
-                    - 3 * y1**2 * (DMA**2 + DMV**2)
-                )
-                - 2
-                * epsL
-                * (
-                    epsDM * y1**2 * (7 * DMV**2 - 23 * DMA**2)
-                    + epsDM**2 * y1 * (DMA**2 - 5 * DMV**2)
-                    + 2 * epsDM**3 * (DMA**2 + DMV**2)
-                    + 2 * y1**3 * (DMA**2 + DMV**2)
-                )
-                - 2 * epsL**3 * (2 * epsDM - y1) * (DMA**2 + DMV**2)
-                + epsL**4 * (DMA**2 + DMV**2)
-                + (epsDM - y1) ** 2
-                * (
-                    epsDM * y1 * (4 * DMA**2 - 2 * DMV**2)
-                    + epsDM**2 * (DMA**2 + DMV**2)
-                    + 4 * y1**2 * (DMA**2 + DMV**2)
-                )
+                4 * y1**4
+                - 10 * y1**3 * (epsL + epsDM)
+                + y1**2 * (9 * epsL**4 + 22 * epsL * epsDM + 9 * epsDM**2)
+                - 4 * y1 * (epsL + epsDM) * (epsL - epsDM) ** 2
+                + (epsL - epsDM) ** 4
             )
             + LV**2
+            * DMA**2
+            * (y1 - (epsL**0.5 + epsDM**0.5) ** 2)
+            * (y1 - (epsL**0.5 - epsDM**0.5) ** 2)
+            * (epsL**2 - 2 * epsL * (epsDM + y1) + (2 * y1 + epsDM) ** 2)
+            + LA**2
+            * DMV**2
+            * (y1 - (epsL**0.5 + epsDM**0.5) ** 2)
+            * (y1 - (epsL**0.5 - epsDM**0.5) ** 2)
+            * (4 * y1**2 + 2 * y1 * (2 * epsL - epsDM) + (epsL - epsDM) ** 2)
+            + LA**2
+            * DMA**2
             * (
-                epsL**2
-                * (
-                    2 * epsDM * y1 * (5 * DMA**2 + 2 * DMV**2)
-                    + 6 * epsDM**2 * (DMA**2 + DMV**2)
-                    + 9 * y1**2 * (DMA**2 + DMV**2)
-                )
-                - 2
-                * epsL
-                * (
-                    epsDM * y1**2 * (7 * DMA**2 - 11 * DMV**2)
-                    + epsDM**2 * y1 * (4 * DMA**2 - 2 * DMV**2)
-                    + 2 * epsDM**3 * (DMA**2 + DMV**2)
-                    + 5 * y1**3 * (DMA**2 + DMV**2)
-                )
-                - 4 * epsL**3 * (epsDM + y1) * (DMA**2 + DMV**2)
-                + epsL**4 * (DMA**2 + DMV**2)
-                + (epsDM - y1) ** 2
-                * (
-                    epsDM * y1 * (4 * DMA**2 - 2 * DMV**2)
-                    + epsDM**2 * (DMA**2 + DMV**2)
-                    + 4 * y1**2 * (DMA**2 + DMV**2)
-                )
+                4 * y1**4
+                - 4 * y1**3 * (epsL + epsDM)
+                - y1**2 * (3 * epsL**2 - 46 * epsL * epsDM + 3 * epsDM**2)
+                + 2 * y1 * (epsL + epsDM) * (epsL - epsDM) ** 2
+                + (epsL - epsDM) ** 4
             )
         )
     )
@@ -387,25 +362,23 @@ def sigma0_Scat_LV_EFT(epsL, epsDM, y1):
 
 
 def sigma0_Scat_T_EFT(epsL, epsDM, y1, DMT, DMAT):
+    # Eqn. B2 in https://arxiv.org/abs/2307.03143
     return (
         1
         / (6 * np.pi * y1**3)
         * (
-            epsL**2
-            * (epsDM * y1 + 6 * epsDM**2 + 6 * y1**2)
-            * (DMT**2 + DMAT**2)
-            + epsL
+            DMT**2
             * (
-                4 * epsDM * y1**2 * (13 * DMT**2 - 5 * DMAT**2)
-                + epsDM**2 * y1 * (DMT**2 + DMAT**2)
-                - 4 * epsDM**3 * (DMT**2 + DMAT**2)
-                - 13 * y1**3 * (DMT**2 + DMAT**2)
+                7 * y1**4
+                - 13 * y1**3 * (epsL + epsDM)
+                + 2 * y1 * +2 * (3 * epsL**2 + 26 * epsL * epsDM + 3 * epsDM**2)
+                - y1 * (epsL + epsDM) * (epsL - eepsDM) ** 2
+                + (epsL - epsDM) ** 4
             )
-            - epsL**3 * (4 * epsDM + y1) * (DMT**2 + DMAT**2)
-            + epsL**4 * (DMT**2 + DMAT**2)
-            + (epsDM - y1) ** 2
-            * (epsDM * y1 + epsDM**2 + 7 * y1**2)
-            * (DMT**2 + DMAT**2)
+            + DMAT**2
+            * (y1 - (epsL**0.5 + epsDM**0.5) ** 2)
+            * (y1 - (epsL**0.5 - epsDM**0.5) ** 2)
+            * (7 * y1**2 + y1 * (epsL + epsDM) + (epsL - epsDM) ** 2)
         )
     )
 
