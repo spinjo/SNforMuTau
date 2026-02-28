@@ -1,9 +1,11 @@
-#!/bin/sh
-#SBATCH -D /users/ttp/jspinner/calc_v5/regimes
-#SBATCH -p albatros,empire
-#SBATCH -e errFS.txt
-#SBATCH -o outFS.txt
-#SBATCH --mem 1G
+#!/bin/bash
+#SBATCH --partition=gshort
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=5:00:00
+#SBATCH --mem=32G
+#SBATCH --chdir=/remote/bigmem03a/spinner/SNforMuTau/regimes
+#SBATCH --array=0-7
 
 source ../venv/bin/activate
 python mainFS.py $SLURM_ARRAY_TASK_ID
