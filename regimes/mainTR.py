@@ -60,7 +60,7 @@ def checkModel_TR(
             iCompton=iCompton,
             limit="full",
         )
-    opacity = np.trapz(lambdaInv, R[iSphere : iSphere + nPointsSim])
+    opacity = np.trapezoid(lambdaInv, R[iSphere : iSphere + nPointsSim])
     print(f"Opacity: {opacity:.2e}")
     return opacity
 

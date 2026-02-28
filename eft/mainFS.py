@@ -36,7 +36,7 @@ def getCoupling_FS(iL, mChi, rangeSim=[50, 80], nSim=1, out=True):
             oneFermion=True,
             limit="eft",
         )
-    Q = np.trapz(dQdR, x=R[n1:n2])
+    Q = np.trapezoid(dQdR, x=R[n1:n2])
 
     Lambda = (Q / helper.getQbound(nSim)) ** 0.25 * 1e-6  # in TeV
     if out:

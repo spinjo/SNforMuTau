@@ -55,7 +55,7 @@ def checkModel_TR(
             oneFermion=False,
             limit="full",
         )
-    opacity = np.trapz(lambdaInv, R[iSphere : iSphere + nPointsSim])
+    opacity = np.trapezoid(lambdaInv, R[iSphere : iSphere + nPointsSim])
     return opacity
 
 

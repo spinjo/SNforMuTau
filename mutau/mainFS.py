@@ -41,7 +41,7 @@ def checkModel_FS(
             limit="full",
         )
 
-    Q = np.trapz(dQdR, x=R[n1:n2])
+    Q = np.trapezoid(dQdR, x=R[n1:n2])
     return Q
 
 
@@ -129,7 +129,7 @@ def main(iCompton=0, nSim=1, cluster=True, split=False):
     if not split:
         for j in range(prec):
             t0 = time.time()
-            bound[i] = getCoupling_FS(
+            bound[j] = getCoupling_FS(
                 mZp[j],
                 mChiOvermZp,
                 gChiOvergL,
@@ -191,6 +191,6 @@ def main(iCompton=0, nSim=1, cluster=True, split=False):
         sys.stderr.close()
 
 
-main(cluster=False, iCompton=1)
+# main(cluster=False, iCompton=1)
 
-# main(cluster=True, split=True, iCompton=1)
+main(cluster=True, split=True, iCompton=1)

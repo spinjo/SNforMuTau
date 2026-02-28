@@ -372,7 +372,7 @@ def sigma0_Scat_T_EFT(epsL, epsDM, y1, DMT, DMAT):
                 7 * y1**4
                 - 13 * y1**3 * (epsL + epsDM)
                 + 2 * y1 * +2 * (3 * epsL**2 + 26 * epsL * epsDM + 3 * epsDM**2)
-                - y1 * (epsL + epsDM) * (epsL - eepsDM) ** 2
+                - y1 * (epsL + epsDM) * (epsL - epsDM) ** 2
                 + (epsL - epsDM) ** 4
             )
             + DMAT**2

@@ -42,7 +42,7 @@ def checkModel_FS(iL, mZp, gL, gChiOvergL, iCompton=0, rangeSim=[50, 80], nSim=1
             oneFermion=True,
             limit="full",
         )
-    Q = np.trapz(dQdR, x=R[n1:n2])
+    Q = np.trapezoid(dQdR, x=R[n1:n2])
     return Q
 
 

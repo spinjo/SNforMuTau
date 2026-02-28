@@ -41,7 +41,7 @@ def getCoupling_TR(iL, mChi, nPointsSim=30, nSim=1, scat=2, approx="inv", out=Tr
             oneFermion=True,
             iCompton=0,
         )
-    opacity = np.trapz(lambdaInv, R[iSphere : iSphere + nPointsSim])
+    opacity = np.trapezoid(lambdaInv, R[iSphere : iSphere + nPointsSim])
 
     Lambda = (opacity / (2 / 3)) ** 0.25 * 1e-6  # in TeV
     if out:

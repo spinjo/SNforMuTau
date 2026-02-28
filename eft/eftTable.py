@@ -36,7 +36,7 @@ def getCoupling_FS(iL, mChi, iInteraction, rangeSim=[40, 100], nSim=1, out=True)
             oneFermion=True,
             limit="eft",
         )
-    Q = np.trapz(dQdR, x=R[n1:n2])
+    Q = np.trapezoid(dQdR, x=R[n1:n2])
 
     Lambda = (Q / helper.getQbound(nSim)) ** 0.25 * 1e-6  # in TeV
     if out:
@@ -74,7 +74,7 @@ def getCoupling_TR(
             oneFermion=True,
             iCompton=0,
         )
-    opacity = np.trapz(lambdaInv, R[iSphere : iSphere + nPointsSim])
+    opacity = np.trapezoid(lambdaInv, R[iSphere : iSphere + nPointsSim])
 
     Lambda = (opacity / (2 / 3)) ** 0.25 * 1e-6  # in TeV
     if out:
@@ -133,9 +133,6 @@ main(cluster=True)
 
 def printTable(approx="exact"):
     bounds = np.load(f"data/eft_table_{approx}.npy") / 2**0.25
-    print(bounds)
-
-    print(bounds[0, 0, 0], round(bounds[0, 0, 0]), round(bounds[0, 0, 0], -1))
 
     # iInteraction = [0, 2, 4, 6, 8, 9, 10]
     iInteraction = np.arange(12)
